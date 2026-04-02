@@ -1,16 +1,33 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { WorkoutProvider, useWorkout } from '@/context/WorkoutContext';
+import BottomNav, { TabId } from '@/components/BottomNav';
+import DashboardView from '@/components/DashboardView';
+import ExerciseManagerView from '@/components/ExerciseManagerView';
+import ActiveWorkoutView from '@/components/ActiveWorkoutView';
+import ProgressView from '@/components/ProgressView';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+function AppContent() {
+  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const { activeWorkout } = useWorkout();
+
+  const handleStartWorkout = () => setActiveTab('workout');
+  const handleFinishWorkout = () => setActiveTab('dashboard');
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background max-w-lg mx-auto">
+      {activeTab === 'dashboard' && <DashboardView onStartWorkout={handleStartWorkout} />}
+      {activeTab === 'exercises' && <ExerciseManagerView />}
+      {activeTab === 'workout' && <ActiveWorkoutView onFinish={handleFinishWorkout} />}
+      {activeTab === 'progress' && <ProgressView />}
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} hasActiveWorkout={!!activeWorkout} />
     </div>
   );
-};
+}
 
-const Index = PlaceholderIndex;
-
-export default Index;
+export default function Index() {
+  return (
+    <WorkoutProvider>
+      <AppContent />
+    </WorkoutProvider>
+  );
+}
