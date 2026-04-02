@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
 import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen } from 'lucide-react';
+import RestTimer from './RestTimer';
 
 interface ActiveWorkoutViewProps {
   onFinish: () => void;
