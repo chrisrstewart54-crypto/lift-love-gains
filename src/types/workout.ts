@@ -32,6 +32,7 @@ export interface WorkoutLog {
   name: string;
   date: string; // ISO string
   exercises: WorkoutExercise[];
+  duration?: number; // minutes
 }
 
 export interface ActiveWorkout {

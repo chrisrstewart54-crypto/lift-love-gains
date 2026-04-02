@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
-import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen } from 'lucide-react';
 
 interface ActiveWorkoutViewProps {
   onFinish: () => void;
@@ -8,21 +8,60 @@ interface ActiveWorkoutViewProps {
 
 export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) {
   const {
-    exercises, activeWorkout, unit,
-    startWorkout, addExerciseToWorkout, removeExerciseFromWorkout,
+    exercises, activeWorkout, unit, templates,
+    startWorkout, startWorkoutFromTemplate, addExerciseToWorkout, removeExerciseFromWorkout,
     addSet, updateSet, removeSet,
     finishWorkout, cancelWorkout, getLastRecord, getExerciseById,
+    saveAsTemplate, deleteTemplate,
   } = useWorkout();
 
   const [workoutName, setWorkoutName] = useState('');
   const [search, setSearch] = useState('');
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [expandedLastRecord, setExpandedLastRecord] = useState<string | null>(null);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
 
   if (!activeWorkout) {
     return (
       <div className="p-4 pb-24 space-y-4 animate-fade-in">
         <h1 className="text-2xl font-bold text-foreground">New Workout</h1>
+
+        {/* Templates */}
+        {templates.length > 0 && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <BookOpen className="w-4 h-4" /> Templates
+            </h2>
+            {templates.map(t => (
+              <div key={t.id} className="bg-card rounded-xl border border-border p-4 flex items-center justify-between">
+                <button
+                  onClick={() => startWorkoutFromTemplate(t.id)}
+                  className="flex-1 text-left"
+                >
+                  <p className="font-semibold text-foreground">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t.exerciseIds.map(id => getExerciseById(id)?.name).filter(Boolean).join(', ')}
+                  </p>
+                </button>
+                <button
+                  onClick={() => deleteTemplate(t.id)}
+                  className="p-2 text-muted-foreground hover:text-destructive ml-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="relative">
+          <div className="absolute inset-x-0 top-1/2 border-t border-border" />
+          <p className="relative text-center text-xs text-muted-foreground bg-background px-3 w-fit mx-auto">
+            or start from scratch
+          </p>
+        </div>
+
         <input
           type="text"
           placeholder="Workout name (e.g. Monday Push)"
@@ -48,6 +87,16 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
   const handleFinish = () => {
     finishWorkout();
     onFinish();
+  };
+
+  const handleSaveAsTemplate = () => {
+    const name = templateName.trim() || activeWorkout.name;
+    const exerciseIds = activeWorkout.exercises.map(e => e.exerciseId);
+    if (exerciseIds.length > 0) {
+      saveAsTemplate(name, exerciseIds);
+      setShowSaveTemplate(false);
+      setTemplateName('');
+    }
   };
 
   const adjustValue = (exerciseId: string, setId: string, field: 'weight' | 'reps', delta: number) => {
@@ -100,7 +149,6 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
               </div>
             </div>
 
-            {/* Last record panel */}
             {isExpanded && lastRecord && (
               <div className="px-4 py-2 bg-muted border-b border-border">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Last Session:</p>
@@ -114,7 +162,6 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
               </div>
             )}
 
-            {/* Sets table */}
             {we.sets.length > 0 && (
               <div className="px-4 py-2">
                 <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-2 text-xs text-muted-foreground mb-2">
@@ -234,14 +281,49 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
         </div>
       )}
 
-      {/* Finish button */}
+      {/* Save as template + Finish */}
       {activeWorkout.exercises.length > 0 && (
-        <button
-          onClick={handleFinish}
-          className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center gap-2"
-        >
-          <Check className="w-5 h-5" /> Finish Workout
-        </button>
+        <div className="space-y-2">
+          {showSaveTemplate ? (
+            <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+              <input
+                type="text"
+                placeholder={activeWorkout.name}
+                value={templateName}
+                onChange={e => setTemplateName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-muted text-foreground placeholder:text-muted-foreground"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveAsTemplate}
+                  className="flex-1 py-3 rounded-xl bg-secondary text-secondary-foreground font-medium flex items-center justify-center gap-1"
+                >
+                  <Save className="w-4 h-4" /> Save
+                </button>
+                <button
+                  onClick={() => setShowSaveTemplate(false)}
+                  className="py-3 px-4 rounded-xl text-muted-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowSaveTemplate(true)}
+              className="w-full py-3 rounded-xl border border-border text-muted-foreground font-medium flex items-center justify-center gap-2"
+            >
+              <Save className="w-4 h-4" /> Save as Template
+            </button>
+          )}
+
+          <button
+            onClick={handleFinish}
+            className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center gap-2"
+          >
+            <Check className="w-5 h-5" /> Finish Workout
+          </button>
+        </div>
       )}
     </div>
   );

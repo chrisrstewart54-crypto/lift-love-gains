@@ -4,6 +4,7 @@ import BottomNav, { TabId } from '@/components/BottomNav';
 import DashboardView from '@/components/DashboardView';
 import ExerciseManagerView from '@/components/ExerciseManagerView';
 import ActiveWorkoutView from '@/components/ActiveWorkoutView';
+import HistoryView from '@/components/HistoryView';
 import ProgressView from '@/components/ProgressView';
 
 function AppContent() {
@@ -18,6 +19,7 @@ function AppContent() {
       {activeTab === 'dashboard' && <DashboardView onStartWorkout={handleStartWorkout} />}
       {activeTab === 'exercises' && <ExerciseManagerView />}
       {activeTab === 'workout' && <ActiveWorkoutView onFinish={handleFinishWorkout} />}
+      {activeTab === 'history' && <HistoryView />}
       {activeTab === 'progress' && <ProgressView />}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} hasActiveWorkout={!!activeWorkout} />
     </div>
