@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { WorkoutProvider, useWorkout } from '@/context/WorkoutContext';
 import BottomNav, { TabId } from '@/components/BottomNav';
 import DashboardView from '@/components/DashboardView';
@@ -6,10 +6,14 @@ import ExerciseManagerView from '@/components/ExerciseManagerView';
 import ActiveWorkoutView from '@/components/ActiveWorkoutView';
 import HistoryView from '@/components/HistoryView';
 import ProgressView from '@/components/ProgressView';
+import { useWeeklyNotification } from '@/hooks/useWeeklyNotification';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
-  const { activeWorkout } = useWorkout();
+  const { activeWorkout, workoutLogs, getExerciseById } = useWorkout();
+
+  const getExerciseName = useCallback((id: string) => getExerciseById(id)?.name, [getExerciseById]);
+  useWeeklyNotification(workoutLogs, getExerciseName);
 
   const handleStartWorkout = () => setActiveTab('workout');
   const handleFinishWorkout = () => setActiveTab('dashboard');

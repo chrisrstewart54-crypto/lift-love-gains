@@ -3,30 +3,31 @@ import { Timer, X, Plus, Minus, Volume2, VolumeX } from 'lucide-react';
 
 const REST_PRESETS = [60, 90, 120, 180];
 
-function playBeep() {
+function playBeep(frequency = 880, duration = 0.15, volume = 0.3) {
   try {
     const ctx = new AudioContext();
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
     oscillator.connect(gain);
     gain.connect(ctx.destination);
-    oscillator.frequency.value = 880;
+    oscillator.frequency.value = frequency;
     oscillator.type = 'sine';
-    gain.gain.value = 0.3;
+    gain.gain.value = volume;
     oscillator.start();
-    oscillator.stop(ctx.currentTime + 0.15);
-    setTimeout(() => {
-      const o2 = ctx.createOscillator();
-      const g2 = ctx.createGain();
-      o2.connect(g2);
-      g2.connect(ctx.destination);
-      o2.frequency.value = 1100;
-      o2.type = 'sine';
-      g2.gain.value = 0.3;
-      o2.start();
-      o2.stop(ctx.currentTime + 0.2);
-    }, 200);
+    oscillator.stop(ctx.currentTime + duration);
   } catch {}
+}
+
+function playFinishBeep() {
+  playBeep(880, 0.15, 0.3);
+  setTimeout(() => playBeep(1100, 0.2, 0.3), 200);
+}
+
+function playCountdownTick(secondsLeft: number) {
+  // Higher pitch for the final beep (0), lower for 5-1
+  const freq = secondsLeft === 0 ? 1100 : 660;
+  const dur = secondsLeft === 0 ? 0.25 : 0.1;
+  playBeep(freq, dur, 0.25);
 }
 
 function vibrate() {
@@ -73,10 +74,14 @@ export default function RestTimer({ onDismiss }: RestTimerProps) {
           setIsRunning(false);
           if (alertEnabled && !alertFired.current) {
             alertFired.current = true;
-            playBeep();
+            playFinishBeep();
             vibrate();
           }
           return 0;
+        }
+        // Play countdown tick for last 5 seconds
+        if (alertEnabled && prev <= 6) {
+          playCountdownTick(prev - 1);
         }
         return prev - 1;
       });

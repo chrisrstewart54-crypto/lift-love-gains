@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
-import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy } from 'lucide-react';
 import RestTimer from './RestTimer';
 
 interface ActiveWorkoutViewProps {
@@ -13,7 +13,7 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
     startWorkout, startWorkoutFromTemplate, addExerciseToWorkout, removeExerciseFromWorkout,
     addSet, updateSet, removeSet,
     finishWorkout, cancelWorkout, getLastRecord, getExerciseById,
-    saveAsTemplate, deleteTemplate,
+    saveAsTemplate, deleteTemplate, workoutLogs,
   } = useWorkout();
 
   const [workoutName, setWorkoutName] = useState('');
@@ -24,10 +24,40 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
   const [templateName, setTemplateName] = useState('');
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [completedSets, setCompletedSets] = useState<Set<string>>(new Set());
+  const [prSets, setPrSets] = useState<Set<string>>(new Set());
 
-  const completeSet = (setId: string) => {
+  const getMaxWeight = (exerciseId: string): number => {
+    let max = 0;
+    for (const log of workoutLogs) {
+      const ex = log.exercises.find(e => e.exerciseId === exerciseId);
+      if (ex) {
+        for (const s of ex.sets) {
+          if (s.weight > max) max = s.weight;
+        }
+      }
+    }
+    return max;
+  };
+
+  const completeSet = (exerciseId: string, setId: string, weight: number) => {
     setCompletedSets(prev => new Set(prev).add(setId));
     setShowRestTimer(true);
+
+    // Check for new personal record
+    if (weight > 0) {
+      const currentMax = getMaxWeight(exerciseId);
+      // Also check other sets in this workout
+      const workoutEx = activeWorkout?.exercises.find(e => e.exerciseId === exerciseId);
+      const otherCompletedMax = workoutEx?.sets
+        .filter(s => s.id !== setId && completedSets.has(s.id))
+        .reduce((m, s) => Math.max(m, s.weight), 0) ?? 0;
+      const effectiveMax = Math.max(currentMax, otherCompletedMax);
+
+      if (weight > effectiveMax) {
+        setPrSets(prev => new Set(prev).add(setId));
+        try { navigator.vibrate?.([100, 50, 100, 50, 200]); } catch {}
+      }
+    }
   };
 
   if (!activeWorkout) {
@@ -173,13 +203,23 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
             {we.sets.length > 0 && (
               <div className="px-3 py-2 space-y-2">
                 {we.sets.map(set => (
-                  <div key={set.id} className={`rounded-lg p-3 ${completedSets.has(set.id) ? 'bg-primary/10 border border-primary/30' : 'bg-muted'}`}>
+                  <div key={set.id} className={`rounded-lg p-3 ${
+                    prSets.has(set.id)
+                      ? 'bg-yellow-500/15 border-2 border-yellow-500/50 ring-2 ring-yellow-500/20'
+                      : completedSets.has(set.id)
+                        ? 'bg-primary/10 border border-primary/30'
+                        : 'bg-muted'
+                  }`}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">Set {set.setNumber}</span>
+                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        Set {set.setNumber}
+                        {prSets.has(set.id) && <Trophy className="w-3.5 h-3.5 text-yellow-500" />}
+                        {prSets.has(set.id) && <span className="text-yellow-500 font-bold text-[10px]">NEW PR!</span>}
+                      </span>
                       <div className="flex items-center gap-1">
                         {!completedSets.has(set.id) && (
                           <button
-                            onClick={() => completeSet(set.id)}
+                            onClick={() => completeSet(we.exerciseId, set.id, set.weight)}
                             className="p-1 text-primary"
                             title="Complete set & start rest timer"
                           >
