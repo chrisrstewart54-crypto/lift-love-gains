@@ -353,6 +353,8 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
           </button>
         </div>
       )}
+
+      {showRestTimer && <RestTimer onDismiss={() => setShowRestTimer(false)} />}
     </div>
   );
 }
