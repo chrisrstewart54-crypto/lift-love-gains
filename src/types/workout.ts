@@ -40,6 +40,12 @@ export interface ActiveWorkout {
   startedAt: string;
 }
 
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  exerciseIds: string[];
+}
+
 export const MUSCLE_GROUPS: MuscleGroup[] = [
   'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps',
   'Legs', 'Glutes', 'Core', 'Forearms', 'Calves', 'Full Body'

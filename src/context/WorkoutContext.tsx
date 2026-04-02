@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExercise, DEFAULT_EXERCISES } from '@/types/workout';
+import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExercise, WorkoutTemplate, DEFAULT_EXERCISES } from '@/types/workout';
 
 interface WorkoutContextType {
   exercises: Exercise[];
   workoutLogs: WorkoutLog[];
   activeWorkout: ActiveWorkout | null;
   unit: WeightUnit;
+  templates: WorkoutTemplate[];
   addExercise: (exercise: Omit<Exercise, 'id'>) => void;
   deleteExercise: (id: string) => void;
   startWorkout: (name: string) => void;
+  startWorkoutFromTemplate: (templateId: string) => void;
   addExerciseToWorkout: (exerciseId: string) => void;
   removeExerciseFromWorkout: (exerciseId: string) => void;
   addSet: (exerciseId: string) => void;
@@ -20,6 +22,8 @@ interface WorkoutContextType {
   getLastRecord: (exerciseId: string) => SetData[] | null;
   getExerciseById: (id: string) => Exercise | undefined;
   getExerciseHistory: (exerciseId: string) => { date: string; sets: SetData[] }[];
+  saveAsTemplate: (name: string, exerciseIds: string[]) => void;
+  deleteTemplate: (id: string) => void;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | null>(null);
@@ -49,11 +53,13 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>(() => loadFromStorage('workoutLogs', []));
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkout | null>(() => loadFromStorage('activeWorkout', null));
   const [unit, setUnit] = useState<WeightUnit>(() => loadFromStorage('weightUnit', 'lbs'));
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>(() => loadFromStorage('workoutTemplates', []));
 
   useEffect(() => saveToStorage('exercises', exercises), [exercises]);
   useEffect(() => saveToStorage('workoutLogs', workoutLogs), [workoutLogs]);
   useEffect(() => saveToStorage('activeWorkout', activeWorkout), [activeWorkout]);
   useEffect(() => saveToStorage('weightUnit', unit), [unit]);
+  useEffect(() => saveToStorage('workoutTemplates', templates), [templates]);
 
   const addExercise = useCallback((exercise: Omit<Exercise, 'id'>) => {
     setExercises(prev => [...prev, { ...exercise, id: generateId() }]);
@@ -65,6 +71,24 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   const startWorkout = useCallback((name: string) => {
     setActiveWorkout({ name, exercises: [], startedAt: new Date().toISOString() });
+  }, []);
+
+  const startWorkoutFromTemplate = useCallback((templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+    setActiveWorkout({
+      name: template.name,
+      exercises: template.exerciseIds.map(id => ({ exerciseId: id, sets: [] })),
+      startedAt: new Date().toISOString(),
+    });
+  }, [templates]);
+
+  const saveAsTemplate = useCallback((name: string, exerciseIds: string[]) => {
+    setTemplates(prev => [...prev, { id: generateId(), name, exerciseIds }]);
+  }, []);
+
+  const deleteTemplate = useCallback((id: string) => {
+    setTemplates(prev => prev.filter(t => t.id !== id));
   }, []);
 
   const addExerciseToWorkout = useCallback((exerciseId: string) => {
@@ -132,11 +156,13 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   const finishWorkout = useCallback(() => {
     if (!activeWorkout) return;
+    const exercisesWithSets = activeWorkout.exercises.filter(e => e.sets.length > 0);
     const log: WorkoutLog = {
       id: generateId(),
       name: activeWorkout.name,
       date: new Date().toISOString(),
-      exercises: activeWorkout.exercises.filter(e => e.sets.length > 0),
+      exercises: exercisesWithSets,
+      duration: Math.round((Date.now() - new Date(activeWorkout.startedAt).getTime()) / 60000),
     };
     setWorkoutLogs(prev => [log, ...prev]);
     setActiveWorkout(null);
@@ -205,12 +231,13 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WorkoutContext.Provider value={{
-      exercises, workoutLogs, activeWorkout, unit,
-      addExercise, deleteExercise, startWorkout,
+      exercises, workoutLogs, activeWorkout, unit, templates,
+      addExercise, deleteExercise, startWorkout, startWorkoutFromTemplate,
       addExerciseToWorkout, removeExerciseFromWorkout,
       addSet, updateSet, removeSet,
       finishWorkout, cancelWorkout, toggleUnit,
       getLastRecord, getExerciseById, getExerciseHistory,
+      saveAsTemplate, deleteTemplate,
     }}>
       {children}
     </WorkoutContext.Provider>
