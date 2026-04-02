@@ -32,12 +32,19 @@ export interface WorkoutLog {
   name: string;
   date: string; // ISO string
   exercises: WorkoutExercise[];
+  duration?: number; // minutes
 }
 
 export interface ActiveWorkout {
   name: string;
   exercises: WorkoutExercise[];
   startedAt: string;
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  exerciseIds: string[];
 }
 
 export const MUSCLE_GROUPS: MuscleGroup[] = [
