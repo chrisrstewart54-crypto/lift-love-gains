@@ -107,7 +107,7 @@ export default function RestTimer({ onDismiss }: RestTimerProps) {
                     : 'bg-secondary text-secondary-foreground'
                 }`}
               >
-                {preset >= 60 ? `${preset / 60}:${(preset % 60).toString().padStart(2, '0')}` : `${preset}s`}
+                {Math.floor(preset / 60)}:{(preset % 60).toString().padStart(2, '0')}
               </button>
             ))}
           </div>
