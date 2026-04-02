@@ -163,64 +163,70 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
             )}
 
             {we.sets.length > 0 && (
-              <div className="px-4 py-2">
-                <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-2 text-xs text-muted-foreground mb-2">
-                  <span>SET</span>
-                  <span className="text-center">WEIGHT ({unit})</span>
-                  <span className="text-center">REPS</span>
-                  <span></span>
-                </div>
+              <div className="px-3 py-2 space-y-2">
                 {we.sets.map(set => (
-                  <div key={set.id} className="grid grid-cols-[auto_1fr_1fr_auto] gap-2 items-center mb-2">
-                    <span className="text-sm font-medium text-muted-foreground w-6 text-center">{set.setNumber}</span>
-                    <div className="flex items-center gap-1">
+                  <div key={set.id} className="bg-muted rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-muted-foreground">Set {set.setNumber}</span>
                       <button
-                        onClick={() => adjustValue(we.exerciseId, set.id, 'weight', -5)}
-                        className="w-10 h-10 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-muted"
+                        onClick={() => removeSet(we.exerciseId, set.id)}
+                        className="p-1 text-muted-foreground hover:text-destructive"
                       >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <input
-                        type="number"
-                        value={set.weight || ''}
-                        onChange={e => updateSet(we.exerciseId, set.id, 'weight', Number(e.target.value) || 0)}
-                        className="flex-1 h-10 rounded-lg bg-muted text-foreground text-center font-semibold text-base min-w-0"
-                        placeholder="0"
-                      />
-                      <button
-                        onClick={() => adjustValue(we.exerciseId, set.id, 'weight', 5)}
-                        className="w-10 h-10 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-muted"
-                      >
-                        <Plus className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => adjustValue(we.exerciseId, set.id, 'reps', -1)}
-                        className="w-10 h-10 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-muted"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <input
-                        type="number"
-                        value={set.reps || ''}
-                        onChange={e => updateSet(we.exerciseId, set.id, 'reps', Number(e.target.value) || 0)}
-                        className="flex-1 h-10 rounded-lg bg-muted text-foreground text-center font-semibold text-base min-w-0"
-                        placeholder="0"
-                      />
-                      <button
-                        onClick={() => adjustValue(we.exerciseId, set.id, 'reps', 1)}
-                        className="w-10 h-10 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-muted"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Weight ({unit})</label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => adjustValue(we.exerciseId, set.id, 'weight', -5)}
+                            className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            value={set.weight || ''}
+                            onChange={e => updateSet(we.exerciseId, set.id, 'weight', Number(e.target.value) || 0)}
+                            className="flex-1 h-9 rounded-lg bg-background text-foreground text-center font-semibold text-sm min-w-0"
+                            placeholder="0"
+                          />
+                          <button
+                            onClick={() => adjustValue(we.exerciseId, set.id, 'weight', 5)}
+                            className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Reps</label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => adjustValue(we.exerciseId, set.id, 'reps', -1)}
+                            className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={set.reps || ''}
+                            onChange={e => updateSet(we.exerciseId, set.id, 'reps', Number(e.target.value) || 0)}
+                            className="flex-1 h-9 rounded-lg bg-background text-foreground text-center font-semibold text-sm min-w-0"
+                            placeholder="0"
+                          />
+                          <button
+                            onClick={() => adjustValue(we.exerciseId, set.id, 'reps', 1)}
+                            className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => removeSet(we.exerciseId, set.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 ))}
               </div>
