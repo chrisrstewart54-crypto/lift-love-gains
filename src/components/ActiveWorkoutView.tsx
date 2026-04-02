@@ -173,15 +173,29 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
             {we.sets.length > 0 && (
               <div className="px-3 py-2 space-y-2">
                 {we.sets.map(set => (
-                  <div key={set.id} className="bg-muted rounded-lg p-3">
+                  <div key={set.id} className={`rounded-lg p-3 ${completedSets.has(set.id) ? 'bg-primary/10 border border-primary/30' : 'bg-muted'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-muted-foreground">Set {set.setNumber}</span>
-                      <button
-                        onClick={() => removeSet(we.exerciseId, set.id)}
-                        className="p-1 text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {!completedSets.has(set.id) && (
+                          <button
+                            onClick={() => completeSet(set.id)}
+                            className="p-1 text-primary"
+                            title="Complete set & start rest timer"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
+                        {completedSets.has(set.id) && (
+                          <span className="text-[10px] text-primary font-medium mr-1">Done</span>
+                        )}
+                        <button
+                          onClick={() => removeSet(we.exerciseId, set.id)}
+                          className="p-1 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
