@@ -140,9 +140,18 @@ export default function RestTimer({ onDismiss }: RestTimerProps) {
           </div>
         </div>
 
-        {/* Duration presets */}
+        {/* Alert toggle + Duration presets */}
         {!isDone && (
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 items-center">
+            <button
+              onClick={() => setAlertEnabled(prev => !prev)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                alertEnabled ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+              }`}
+              title={alertEnabled ? 'Alert on' : 'Alert off'}
+            >
+              {alertEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            </button>
             {REST_PRESETS.map(preset => (
               <button
                 key={preset}
