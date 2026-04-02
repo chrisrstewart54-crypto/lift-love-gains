@@ -1,7 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Timer, X, Plus, Minus } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Timer, X, Plus, Minus, Volume2, VolumeX } from 'lucide-react';
 
 const REST_PRESETS = [60, 90, 120, 180];
+
+function playBeep() {
+  try {
+    const ctx = new AudioContext();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.frequency.value = 880;
+    oscillator.type = 'sine';
+    gain.gain.value = 0.3;
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.15);
+    setTimeout(() => {
+      const o2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      o2.connect(g2);
+      g2.connect(ctx.destination);
+      o2.frequency.value = 1100;
+      o2.type = 'sine';
+      g2.gain.value = 0.3;
+      o2.start();
+      o2.stop(ctx.currentTime + 0.2);
+    }, 200);
+  } catch {}
+}
+
+function vibrate() {
+  try {
+    navigator.vibrate?.([200, 100, 200]);
+  } catch {}
+}
 
 interface RestTimerProps {
   onDismiss: () => void;
@@ -14,14 +46,23 @@ export default function RestTimer({ onDismiss }: RestTimerProps) {
   });
   const [remaining, setRemaining] = useState(duration);
   const [isRunning, setIsRunning] = useState(true);
+  const [alertEnabled, setAlertEnabled] = useState(() => {
+    return localStorage.getItem('restTimerAlert') !== 'off';
+  });
+  const alertFired = useRef(false);
 
   useEffect(() => {
     localStorage.setItem('restTimerDuration', String(duration));
   }, [duration]);
 
   useEffect(() => {
+    localStorage.setItem('restTimerAlert', alertEnabled ? 'on' : 'off');
+  }, [alertEnabled]);
+
+  useEffect(() => {
     setRemaining(duration);
     setIsRunning(true);
+    alertFired.current = false;
   }, [duration]);
 
   useEffect(() => {
@@ -30,13 +71,18 @@ export default function RestTimer({ onDismiss }: RestTimerProps) {
       setRemaining(prev => {
         if (prev <= 1) {
           setIsRunning(false);
+          if (alertEnabled && !alertFired.current) {
+            alertFired.current = true;
+            playBeep();
+            vibrate();
+          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isRunning, remaining]);
+  }, [isRunning, remaining, alertEnabled]);
 
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
@@ -94,9 +140,18 @@ export default function RestTimer({ onDismiss }: RestTimerProps) {
           </div>
         </div>
 
-        {/* Duration presets */}
+        {/* Alert toggle + Duration presets */}
         {!isDone && (
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 items-center">
+            <button
+              onClick={() => setAlertEnabled(prev => !prev)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                alertEnabled ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+              }`}
+              title={alertEnabled ? 'Alert on' : 'Alert off'}
+            >
+              {alertEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            </button>
             {REST_PRESETS.map(preset => (
               <button
                 key={preset}
