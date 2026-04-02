@@ -22,6 +22,13 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
   const [expandedLastRecord, setExpandedLastRecord] = useState<string | null>(null);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  const [showRestTimer, setShowRestTimer] = useState(false);
+  const [completedSets, setCompletedSets] = useState<Set<string>>(new Set());
+
+  const completeSet = (setId: string) => {
+    setCompletedSets(prev => new Set(prev).add(setId));
+    setShowRestTimer(true);
+  };
 
   if (!activeWorkout) {
     return (
