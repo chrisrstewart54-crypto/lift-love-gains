@@ -155,6 +155,19 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const reorderExercise = useCallback((exerciseId: string, direction: 'up' | 'down') => {
+    setActiveWorkout(prev => {
+      if (!prev) return prev;
+      const idx = prev.exercises.findIndex(e => e.exerciseId === exerciseId);
+      if (idx < 0) return prev;
+      const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= prev.exercises.length) return prev;
+      const arr = [...prev.exercises];
+      [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+      return { ...prev, exercises: arr };
+    });
+  }, []);
+
   const finishWorkout = useCallback(() => {
     if (!activeWorkout) return;
     const exercisesWithSets = activeWorkout.exercises.filter(e => e.sets.length > 0);
