@@ -1,6 +1,6 @@
-import { Home, Dumbbell, Play, TrendingUp, ClipboardList } from 'lucide-react';
+import { Home, Dumbbell, Play, TrendingUp, ClipboardList, Settings } from 'lucide-react';
 
-export type TabId = 'dashboard' | 'exercises' | 'workout' | 'history' | 'progress';
+export type TabId = 'dashboard' | 'exercises' | 'workout' | 'history' | 'progress' | 'settings';
 
 interface BottomNavProps {
   activeTab: TabId;
