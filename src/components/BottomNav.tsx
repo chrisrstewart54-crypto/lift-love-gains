@@ -14,6 +14,7 @@ const tabs: { id: TabId; label: string; icon: typeof Home }[] = [
   { id: 'workout', label: 'Workout', icon: Play },
   { id: 'history', label: 'History', icon: ClipboardList },
   { id: 'progress', label: 'Progress', icon: TrendingUp },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export default function BottomNav({ activeTab, onTabChange, hasActiveWorkout }: BottomNavProps) {

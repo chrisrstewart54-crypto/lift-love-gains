@@ -26,6 +26,7 @@ function AppContent() {
       {activeTab === 'workout' && <ActiveWorkoutView onFinish={handleFinishWorkout} />}
       {activeTab === 'history' && <HistoryView />}
       {activeTab === 'progress' && <ProgressView />}
+      {activeTab === 'settings' && <SettingsView />}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} hasActiveWorkout={!!activeWorkout} />
     </div>
   );
