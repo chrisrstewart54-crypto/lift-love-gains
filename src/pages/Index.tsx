@@ -6,6 +6,7 @@ import ExerciseManagerView from '@/components/ExerciseManagerView';
 import ActiveWorkoutView from '@/components/ActiveWorkoutView';
 import HistoryView from '@/components/HistoryView';
 import ProgressView from '@/components/ProgressView';
+import SettingsView from '@/components/SettingsView';
 import { useWeeklyNotification } from '@/hooks/useWeeklyNotification';
 
 function AppContent() {
@@ -25,6 +26,7 @@ function AppContent() {
       {activeTab === 'workout' && <ActiveWorkoutView onFinish={handleFinishWorkout} />}
       {activeTab === 'history' && <HistoryView />}
       {activeTab === 'progress' && <ProgressView />}
+      {activeTab === 'settings' && <SettingsView />}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} hasActiveWorkout={!!activeWorkout} />
     </div>
   );

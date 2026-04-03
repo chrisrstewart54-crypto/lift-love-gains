@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
-import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy, ArrowUp, ArrowDown } from 'lucide-react';
 import RestTimer from './RestTimer';
 
 interface ActiveWorkoutViewProps {
@@ -11,7 +11,7 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
   const {
     exercises, activeWorkout, unit, templates,
     startWorkout, startWorkoutFromTemplate, addExerciseToWorkout, removeExerciseFromWorkout,
-    addSet, updateSet, removeSet,
+    addSet, updateSet, removeSet, reorderExercise,
     finishWorkout, cancelWorkout, getLastRecord, getExerciseById,
     saveAsTemplate, deleteTemplate, workoutLogs,
   } = useWorkout();
@@ -155,7 +155,7 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
       </div>
 
       {/* Exercise list */}
-      {activeWorkout.exercises.map(we => {
+      {activeWorkout.exercises.map((we, weIdx) => {
         const exercise = getExerciseById(we.exerciseId);
         if (!exercise) return null;
         const lastRecord = getLastRecord(we.exerciseId);
@@ -168,7 +168,25 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
                 <p className="font-semibold text-foreground">{exercise.name}</p>
                 <p className="text-xs text-muted-foreground">{exercise.muscleGroup} · {exercise.equipment}</p>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
+                {weIdx > 0 && (
+                  <button
+                    onClick={() => reorderExercise(we.exerciseId, 'up')}
+                    className="p-1.5 text-muted-foreground hover:text-foreground"
+                    title="Move up"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                )}
+                {weIdx < activeWorkout.exercises.length - 1 && (
+                  <button
+                    onClick={() => reorderExercise(we.exerciseId, 'down')}
+                    className="p-1.5 text-muted-foreground hover:text-foreground"
+                    title="Move down"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                )}
                 {lastRecord && (
                   <button
                     onClick={() => setExpandedLastRecord(isExpanded ? null : we.exerciseId)}

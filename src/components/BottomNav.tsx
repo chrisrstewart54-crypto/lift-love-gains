@@ -1,6 +1,6 @@
-import { Home, Dumbbell, Play, TrendingUp, ClipboardList } from 'lucide-react';
+import { Home, Dumbbell, Play, TrendingUp, ClipboardList, Settings } from 'lucide-react';
 
-export type TabId = 'dashboard' | 'exercises' | 'workout' | 'history' | 'progress';
+export type TabId = 'dashboard' | 'exercises' | 'workout' | 'history' | 'progress' | 'settings';
 
 interface BottomNavProps {
   activeTab: TabId;
@@ -14,6 +14,7 @@ const tabs: { id: TabId; label: string; icon: typeof Home }[] = [
   { id: 'workout', label: 'Workout', icon: Play },
   { id: 'history', label: 'History', icon: ClipboardList },
   { id: 'progress', label: 'Progress', icon: TrendingUp },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export default function BottomNav({ activeTab, onTabChange, hasActiveWorkout }: BottomNavProps) {

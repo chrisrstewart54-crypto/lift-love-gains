@@ -3,13 +3,20 @@ import { WorkoutLog } from '@/types/workout';
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay(); // 0=Sun
+  const day = d.getDay();
   d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-function getWeeklyStats(logs: WorkoutLog[], allLogs: WorkoutLog[]) {
+function loadSetting<T>(key: string, fallback: T): T {
+  try {
+    const v = localStorage.getItem(key);
+    return v !== null ? JSON.parse(v) : fallback;
+  } catch { return fallback; }
+}
+
+function getWeeklyStats(logs: WorkoutLog[]) {
   const weekStart = getWeekStart(new Date());
   const weekLogs = logs.filter(l => new Date(l.date) >= weekStart);
 
@@ -17,9 +24,8 @@ function getWeeklyStats(logs: WorkoutLog[], allLogs: WorkoutLog[]) {
   let totalVolume = 0;
   const prs: string[] = [];
 
-  // Calculate historical max weights per exercise (before this week)
   const historicalMax: Record<string, number> = {};
-  for (const log of allLogs) {
+  for (const log of logs) {
     if (new Date(log.date) >= weekStart) continue;
     for (const ex of log.exercises) {
       for (const s of ex.sets) {
@@ -30,7 +36,6 @@ function getWeeklyStats(logs: WorkoutLog[], allLogs: WorkoutLog[]) {
     }
   }
 
-  // Track this week's max per exercise for PR detection
   const weekMax: Record<string, number> = {};
   for (const log of weekLogs) {
     for (const ex of log.exercises) {
@@ -59,9 +64,14 @@ export function useWeeklyNotification(
   const checkAndNotify = useCallback(() => {
     if (!('Notification' in window)) return;
 
+    const enabled = loadSetting('notifEnabled', true);
+    if (!enabled) return;
+
+    const notifDay = loadSetting('notifDay', 0); // 0=Sunday
+    const notifHour = loadSetting('notifHour', 20); // 8 PM
+
     const now = new Date();
-    // Only trigger on Sunday (day 0) at or after 8 PM
-    if (now.getDay() !== 0 || now.getHours() < 20) return;
+    if (now.getDay() !== notifDay || now.getHours() < notifHour) return;
 
     const weekKey = `weeklySummary_${getWeekStart(now).toISOString().slice(0, 10)}`;
     if (localStorage.getItem(weekKey)) return;
@@ -72,7 +82,7 @@ export function useWeeklyNotification(
     }
     if (Notification.permission !== 'granted') return;
 
-    const { numWorkouts, totalVolume, prs } = getWeeklyStats(workoutLogs, workoutLogs);
+    const { numWorkouts, totalVolume, prs } = getWeeklyStats(workoutLogs);
     if (numWorkouts === 0) return;
 
     const prNames = prs.map(id => getExerciseName(id)).filter(Boolean);
@@ -86,7 +96,6 @@ export function useWeeklyNotification(
   }, [workoutLogs, getExerciseName]);
 
   useEffect(() => {
-    // Check on mount and every 10 minutes
     checkAndNotify();
     const interval = setInterval(checkAndNotify, 10 * 60 * 1000);
     return () => clearInterval(interval);
