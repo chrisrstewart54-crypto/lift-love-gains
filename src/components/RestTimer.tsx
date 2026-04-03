@@ -24,7 +24,8 @@ function playFinishBeep() {
 }
 
 function playCountdownTick(secondsLeft: number) {
-  // Higher pitch for the final beep (0), lower for 5-1
+  const countdownEnabled = localStorage.getItem('countdownEnabled');
+  if (countdownEnabled === 'false') return;
   const freq = secondsLeft === 0 ? 1100 : 660;
   const dur = secondsLeft === 0 ? 0.25 : 0.1;
   playBeep(freq, dur, 0.25);
@@ -32,6 +33,8 @@ function playCountdownTick(secondsLeft: number) {
 
 function vibrate() {
   try {
+    const vibEnabled = localStorage.getItem('vibrationEnabled');
+    if (vibEnabled === 'false') return;
     navigator.vibrate?.([200, 100, 200]);
   } catch {}
 }

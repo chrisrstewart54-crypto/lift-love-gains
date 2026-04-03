@@ -235,7 +235,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       exercises, workoutLogs, activeWorkout, unit, templates,
       addExercise, deleteExercise, startWorkout, startWorkoutFromTemplate,
       addExerciseToWorkout, removeExerciseFromWorkout,
-      addSet, updateSet, removeSet,
+      addSet, updateSet, removeSet, reorderExercise,
       finishWorkout, cancelWorkout, toggleUnit,
       getLastRecord, getExerciseById, getExerciseHistory,
       saveAsTemplate, deleteTemplate,
