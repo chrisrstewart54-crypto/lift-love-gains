@@ -186,7 +186,7 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
                   >
                     <ArrowDown className="w-4 h-4" />
                   </button>
-                )}
+                {lastRecord && (
                   <button
                     onClick={() => setExpandedLastRecord(isExpanded ? null : we.exerciseId)}
                     className="p-2 text-accent"
