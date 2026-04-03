@@ -155,7 +155,7 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
       </div>
 
       {/* Exercise list */}
-      {activeWorkout.exercises.map(we => {
+      {activeWorkout.exercises.map((we, weIdx) => {
         const exercise = getExerciseById(we.exerciseId);
         if (!exercise) return null;
         const lastRecord = getLastRecord(we.exerciseId);
