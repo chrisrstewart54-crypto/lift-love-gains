@@ -168,8 +168,25 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
                 <p className="font-semibold text-foreground">{exercise.name}</p>
                 <p className="text-xs text-muted-foreground">{exercise.muscleGroup} · {exercise.equipment}</p>
               </div>
-              <div className="flex items-center gap-1">
-                {lastRecord && (
+              <div className="flex items-center gap-0.5">
+                {weIdx > 0 && (
+                  <button
+                    onClick={() => reorderExercise(we.exerciseId, 'up')}
+                    className="p-1.5 text-muted-foreground hover:text-foreground"
+                    title="Move up"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                )}
+                {weIdx < activeWorkout.exercises.length - 1 && (
+                  <button
+                    onClick={() => reorderExercise(we.exerciseId, 'down')}
+                    className="p-1.5 text-muted-foreground hover:text-foreground"
+                    title="Move down"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                )}
                   <button
                     onClick={() => setExpandedLastRecord(isExpanded ? null : we.exerciseId)}
                     className="p-2 text-accent"
