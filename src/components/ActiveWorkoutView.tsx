@@ -11,7 +11,7 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
   const {
     exercises, activeWorkout, unit, templates,
     startWorkout, startWorkoutFromTemplate, addExerciseToWorkout, removeExerciseFromWorkout,
-    addSet, updateSet, removeSet,
+    addSet, updateSet, removeSet, reorderExercise,
     finishWorkout, cancelWorkout, getLastRecord, getExerciseById,
     saveAsTemplate, deleteTemplate, workoutLogs,
   } = useWorkout();
