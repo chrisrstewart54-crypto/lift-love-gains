@@ -15,6 +15,7 @@ interface WorkoutContextType {
   removeExerciseFromWorkout: (exerciseId: string) => void;
   addSet: (exerciseId: string) => void;
   updateSet: (exerciseId: string, setId: string, field: 'weight' | 'reps', value: number) => void;
+  reorderExercise: (exerciseId: string, direction: 'up' | 'down') => void;
   removeSet: (exerciseId: string, setId: string) => void;
   finishWorkout: () => void;
   cancelWorkout: () => void;
