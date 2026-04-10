@@ -25,6 +25,8 @@ interface WorkoutContextType {
   getExerciseHistory: (exerciseId: string) => { date: string; sets: SetData[] }[];
   saveAsTemplate: (name: string, exerciseIds: string[]) => void;
   deleteTemplate: (id: string) => void;
+  importData: (data: { exercises?: Exercise[]; workoutLogs?: WorkoutLog[]; templates?: WorkoutTemplate[]; unit?: WeightUnit }) => void;
+  exportData: () => { exercises: Exercise[]; workoutLogs: WorkoutLog[]; templates: WorkoutTemplate[]; unit: WeightUnit };
 }
 
 const WorkoutContext = createContext<WorkoutContextType | null>(null);
@@ -243,6 +245,17 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       .reverse();
   }, [workoutLogs]);
 
+  const importData = useCallback((data: { exercises?: Exercise[]; workoutLogs?: WorkoutLog[]; templates?: WorkoutTemplate[]; unit?: WeightUnit }) => {
+    if (data.exercises) setExercises(data.exercises);
+    if (data.workoutLogs) setWorkoutLogs(prev => [...data.workoutLogs!, ...prev]);
+    if (data.templates) setTemplates(prev => [...data.templates!, ...prev]);
+    if (data.unit) setUnit(data.unit);
+  }, []);
+
+  const exportData = useCallback(() => ({
+    exercises, workoutLogs, templates, unit,
+  }), [exercises, workoutLogs, templates, unit]);
+
   return (
     <WorkoutContext.Provider value={{
       exercises, workoutLogs, activeWorkout, unit, templates,
@@ -251,7 +264,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       addSet, updateSet, removeSet, reorderExercise,
       finishWorkout, cancelWorkout, toggleUnit,
       getLastRecord, getExerciseById, getExerciseHistory,
-      saveAsTemplate, deleteTemplate,
+      saveAsTemplate, deleteTemplate, importData, exportData,
     }}>
       {children}
     </WorkoutContext.Provider>

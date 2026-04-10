@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Bell, Timer, Volume2, Download, Upload } from 'lucide-react';
 import HealthConnectSync from './HealthConnectSync';
+import { useWorkout } from '@/context/WorkoutContext';
+import { toast } from 'sonner';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -18,6 +20,38 @@ function saveSetting(key: string, value: unknown) {
 }
 
 export default function SettingsView() {
+  const { exportData, importData } = useWorkout();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const data = exportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `workout-history-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Workout data exported!');
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        importData(data);
+        toast.success(`Imported ${data.workoutLogs?.length ?? 0} workout logs!`);
+      } catch {
+        toast.error('Invalid file format');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const [notifDay, setNotifDay] = useState<number>(() => loadSetting('notifDay', 0));
   const [notifHour, setNotifHour] = useState<number>(() => loadSetting('notifHour', 20));
   const [notifEnabled, setNotifEnabled] = useState<boolean>(() => loadSetting('notifEnabled', true));
@@ -162,6 +196,32 @@ export default function SettingsView() {
             >
               <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-foreground transition-transform ${vibrationEnabled ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Import / Export */}
+      <section className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <Download className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-foreground text-sm">Import / Export Data</h2>
+        </div>
+        <div className="p-4 space-y-3">
+          <p className="text-xs text-muted-foreground">Back up your workout history as a JSON file, or import a previous backup.</p>
+          <div className="flex gap-3">
+            <button
+              onClick={handleExport}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+            >
+              <Download className="w-4 h-4" /> Export
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium"
+            >
+              <Upload className="w-4 h-4" /> Import
+            </button>
+            <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
           </div>
         </div>
       </section>
