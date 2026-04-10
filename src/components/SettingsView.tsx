@@ -165,6 +165,9 @@ export default function SettingsView() {
           </div>
         </div>
       </section>
+
+      {/* Health Connect */}
+      <HealthConnectSync />
     </div>
   );
 }
