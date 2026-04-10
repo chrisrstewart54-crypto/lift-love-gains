@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Bell, Timer, Volume2, Download, Upload } from 'lucide-react';
 import HealthConnectSync from './HealthConnectSync';
+import { useWorkout } from '@/context/WorkoutContext';
+import { toast } from 'sonner';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
