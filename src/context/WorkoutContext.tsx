@@ -25,6 +25,8 @@ interface WorkoutContextType {
   getExerciseHistory: (exerciseId: string) => { date: string; sets: SetData[] }[];
   saveAsTemplate: (name: string, exerciseIds: string[]) => void;
   deleteTemplate: (id: string) => void;
+  importData: (data: { exercises?: Exercise[]; workoutLogs?: WorkoutLog[]; templates?: WorkoutTemplate[]; unit?: WeightUnit }) => void;
+  exportData: () => { exercises: Exercise[]; workoutLogs: WorkoutLog[]; templates: WorkoutTemplate[]; unit: WeightUnit };
 }
 
 const WorkoutContext = createContext<WorkoutContextType | null>(null);
