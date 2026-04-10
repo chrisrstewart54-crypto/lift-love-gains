@@ -200,6 +200,32 @@ export default function SettingsView() {
         </div>
       </section>
 
+      {/* Import / Export */}
+      <section className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <Download className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-foreground text-sm">Import / Export Data</h2>
+        </div>
+        <div className="p-4 space-y-3">
+          <p className="text-xs text-muted-foreground">Back up your workout history as a JSON file, or import a previous backup.</p>
+          <div className="flex gap-3">
+            <button
+              onClick={handleExport}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+            >
+              <Download className="w-4 h-4" /> Export
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium"
+            >
+              <Upload className="w-4 h-4" /> Import
+            </button>
+            <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+          </div>
+        </div>
+      </section>
+
       {/* Health Connect */}
       <HealthConnectSync />
     </div>
