@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight } from 'lucide-react';
+import HealthConnectSync from './HealthConnectSync';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -164,6 +165,9 @@ export default function SettingsView() {
           </div>
         </div>
       </section>
+
+      {/* Health Connect */}
+      <HealthConnectSync />
     </div>
   );
 }
