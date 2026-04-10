@@ -27,8 +27,8 @@ export function isNativePlatform(): boolean {
  * Lazily import the plugin only when on native
  */
 async function getPlugin() {
-  const { CapacitorHealthConnect } = await import('@devmaxime/capacitor-health-connect');
-  return CapacitorHealthConnect;
+  const { HealthConnect } = await import('@devmaxime/capacitor-health-connect');
+  return HealthConnect;
 }
 
 /**
