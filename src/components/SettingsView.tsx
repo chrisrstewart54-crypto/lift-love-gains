@@ -20,6 +20,38 @@ function saveSetting(key: string, value: unknown) {
 }
 
 export default function SettingsView() {
+  const { exportData, importData } = useWorkout();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const data = exportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `workout-history-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Workout data exported!');
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        importData(data);
+        toast.success(`Imported ${data.workoutLogs?.length ?? 0} workout logs!`);
+      } catch {
+        toast.error('Invalid file format');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const [notifDay, setNotifDay] = useState<number>(() => loadSetting('notifDay', 0));
   const [notifHour, setNotifHour] = useState<number>(() => loadSetting('notifHour', 20));
   const [notifEnabled, setNotifEnabled] = useState<boolean>(() => loadSetting('notifEnabled', true));
