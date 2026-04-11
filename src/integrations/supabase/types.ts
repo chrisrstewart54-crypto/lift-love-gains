@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercises: {
+        Row: {
+          created_at: string
+          equipment: string
+          id: string
+          muscle_group: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipment?: string
+          id?: string
+          muscle_group: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          equipment?: string
+          id?: string
+          muscle_group?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          weight_unit: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight_unit?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight_unit?: string
+        }
+        Relationships: []
+      }
+      workout_logs: {
+        Row: {
+          created_at: string
+          date: string
+          duration: number
+          exercises: Json
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          duration?: number
+          exercises?: Json
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          duration?: number
+          exercises?: Json
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_templates: {
+        Row: {
+          created_at: string
+          exercise_ids: string[]
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_ids?: string[]
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_ids?: string[]
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
