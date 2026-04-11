@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Bell, Timer, Volume2, Download, Upload } from 'lucide-react';
+import { Settings, Bell, Timer, Volume2, Download, Upload, LogOut } from 'lucide-react';
 import HealthConnectSync from './HealthConnectSync';
 import { useWorkout } from '@/context/WorkoutContext';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -21,6 +22,7 @@ function saveSetting(key: string, value: unknown) {
 
 export default function SettingsView() {
   const { exportData, importData } = useWorkout();
+  const { signOut, user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -228,6 +230,23 @@ export default function SettingsView() {
 
       {/* Health Connect */}
       <HealthConnectSync />
+
+      {/* Account */}
+      <section className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <LogOut className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-foreground text-sm">Account</h2>
+        </div>
+        <div className="p-4 space-y-3">
+          <p className="text-xs text-muted-foreground">Signed in as {user?.email}</p>
+          <button
+            onClick={signOut}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium"
+          >
+            <LogOut className="w-4 h-4" /> Sign Out
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
