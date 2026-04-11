@@ -3,6 +3,7 @@ import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExerci
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
 
 interface WorkoutContextType {
   exercises: Exercise[];
