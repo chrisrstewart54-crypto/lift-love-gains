@@ -174,10 +174,10 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         name: log.name,
         date: log.date,
         duration: log.duration,
-        exercises: log.exercises.map(e => ({
+        exercises: JSON.parse(JSON.stringify(log.exercises.map(e => ({
           ...e,
           exerciseId: idMap.get(e.exerciseId) || e.exerciseId,
-        })),
+        })))) as Json,
       }));
 
       if (logRows.length > 0) {
@@ -455,7 +455,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         name: log.name,
         date: log.date,
         duration: log.duration,
-        exercises: log.exercises.map(e => ({ ...e, exerciseId: idMap.get(e.exerciseId) || e.exerciseId })),
+        exercises: JSON.parse(JSON.stringify(log.exercises.map(e => ({ ...e, exerciseId: idMap.get(e.exerciseId) || e.exerciseId })))) as Json,
       }));
       const { data: inserted } = await supabase.from('workout_logs').insert(rows).select();
       if (inserted) {
