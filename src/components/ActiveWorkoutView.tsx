@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
 import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy, ArrowUp, ArrowDown } from 'lucide-react';
 import RestTimer from './RestTimer';
@@ -23,8 +23,42 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [showRestTimer, setShowRestTimer] = useState(false);
-  const [completedSets, setCompletedSets] = useState<Set<string>>(new Set());
-  const [prSets, setPrSets] = useState<Set<string>>(new Set());
+  const [completedSets, setCompletedSets] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('activeWorkout:completedSets');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [prSets, setPrSets] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('activeWorkout:prSets');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  // Persist set-completion state so it survives the phone sleeping / webview reload
+  useEffect(() => {
+    try {
+      localStorage.setItem('activeWorkout:completedSets', JSON.stringify([...completedSets]));
+    } catch {}
+  }, [completedSets]);
+  useEffect(() => {
+    try {
+      localStorage.setItem('activeWorkout:prSets', JSON.stringify([...prSets]));
+    } catch {}
+  }, [prSets]);
+
+  // Clear persisted set state when the workout ends (activeWorkout becomes null)
+  useEffect(() => {
+    if (!activeWorkout) {
+      setCompletedSets(new Set());
+      setPrSets(new Set());
+      try {
+        localStorage.removeItem('activeWorkout:completedSets');
+        localStorage.removeItem('activeWorkout:prSets');
+      } catch {}
+    }
+  }, [activeWorkout]);
 
   const getMaxWeight = (exerciseId: string): number => {
     let max = 0;
