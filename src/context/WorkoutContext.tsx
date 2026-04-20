@@ -279,7 +279,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const addExerciseToWorkout = useCallback((exerciseId: string) => {
     setActiveWorkout(prev => {
       if (!prev || prev.exercises.some(e => e.exerciseId === exerciseId)) return prev;
-      return { ...prev, exercises: [...prev.exercises, { exerciseId, sets: [] }] };
+      return { ...prev, exercises: [{ exerciseId, sets: [] }, ...prev.exercises] };
     });
   }, []);
 
