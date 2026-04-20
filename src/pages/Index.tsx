@@ -16,8 +16,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const { activeWorkout, workoutLogs, getExerciseById, loading } = useWorkout();
 
-  const getExerciseName = useCallback((id: string) => getExerciseById(id)?.name, [getExerciseById]);
-  useWeeklyNotification(workoutLogs, getExerciseName);
+  useWeeklyNotification(workoutLogs, getExerciseById);
 
   const handleStartWorkout = () => setActiveTab('workout');
   const handleFinishWorkout = () => setActiveTab('dashboard');

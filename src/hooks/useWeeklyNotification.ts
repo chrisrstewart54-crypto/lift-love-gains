@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { WorkoutLog } from '@/types/workout';
+import { WorkoutLog, calculateSetVolume } from '@/types/workout';
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
@@ -16,7 +16,7 @@ function loadSetting<T>(key: string, fallback: T): T {
   } catch { return fallback; }
 }
 
-function getWeeklyStats(logs: WorkoutLog[]) {
+function getWeeklyStats(logs: WorkoutLog[], getEquipment: (id: string) => string | undefined) {
   const weekStart = getWeekStart(new Date());
   const weekLogs = logs.filter(l => new Date(l.date) >= weekStart);
 
@@ -39,8 +39,9 @@ function getWeeklyStats(logs: WorkoutLog[]) {
   const weekMax: Record<string, number> = {};
   for (const log of weekLogs) {
     for (const ex of log.exercises) {
+      const equipment = getEquipment(ex.exerciseId);
       for (const s of ex.sets) {
-        totalVolume += s.weight * s.reps;
+        totalVolume += calculateSetVolume(s.weight, s.reps, equipment);
         if (!weekMax[ex.exerciseId] || s.weight > weekMax[ex.exerciseId]) {
           weekMax[ex.exerciseId] = s.weight;
         }
@@ -59,7 +60,7 @@ function getWeeklyStats(logs: WorkoutLog[]) {
 
 export function useWeeklyNotification(
   workoutLogs: WorkoutLog[],
-  getExerciseName: (id: string) => string | undefined
+  getExercise: (id: string) => { name: string; equipment?: string } | undefined
 ) {
   const checkAndNotify = useCallback(() => {
     if (!('Notification' in window)) return;
@@ -82,10 +83,13 @@ export function useWeeklyNotification(
     }
     if (Notification.permission !== 'granted') return;
 
-    const { numWorkouts, totalVolume, prs } = getWeeklyStats(workoutLogs);
+    const { numWorkouts, totalVolume, prs } = getWeeklyStats(
+      workoutLogs,
+      (id) => getExercise(id)?.equipment
+    );
     if (numWorkouts === 0) return;
 
-    const prNames = prs.map(id => getExerciseName(id)).filter(Boolean);
+    const prNames = prs.map(id => getExercise(id)?.name).filter(Boolean);
     let body = `🏋️ ${numWorkouts} workout${numWorkouts > 1 ? 's' : ''}\n💪 ${totalVolume.toLocaleString()} total volume`;
     if (prNames.length > 0) {
       body += `\n🏆 New PRs: ${prNames.join(', ')}`;
@@ -93,7 +97,7 @@ export function useWeeklyNotification(
 
     new Notification('Weekly Workout Summary', { body, icon: '/placeholder.svg' });
     localStorage.setItem(weekKey, 'sent');
-  }, [workoutLogs, getExerciseName]);
+  }, [workoutLogs, getExercise]);
 
   useEffect(() => {
     checkAndNotify();
