@@ -47,6 +47,12 @@ export interface WorkoutTemplate {
   exerciseIds: string[];
 }
 
+// Helper to calculate volume with dumbbell multiplier (2x weight for dumbbells)
+export function calculateSetVolume(weight: number, reps: number, equipment?: string): number {
+  const multiplier = equipment === 'Dumbbell' ? 2 : 1;
+  return weight * reps * multiplier;
+}
+
 export const MUSCLE_GROUPS: MuscleGroup[] = [
   'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps',
   'Legs', 'Glutes', 'Core', 'Forearms', 'Calves', 'Full Body'
