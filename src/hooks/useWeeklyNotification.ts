@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { WorkoutLog } from '@/types/workout';
+import { WorkoutLog, calculateSetVolume } from '@/types/workout';
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
