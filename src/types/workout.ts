@@ -100,4 +100,8 @@ export const DEFAULT_EXERCISES: Exercise[] = [
   { id: '19', name: 'Calf Raises', muscleGroup: 'Calves', equipment: 'Machine' },
   { id: '20', name: 'Plank', muscleGroup: 'Core', equipment: 'Bodyweight' },
   { id: '21', name: 'Hip Thrust', muscleGroup: 'Glutes', equipment: 'Barbell' },
+  { id: '22', name: 'Treadmill', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
+  { id: '23', name: 'Rowing Machine', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
+  { id: '24', name: 'Elliptical Trainer', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
+  { id: '25', name: 'Exercise Bike', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
 ];
