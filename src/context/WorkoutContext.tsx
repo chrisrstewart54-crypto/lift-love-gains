@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExercise, WorkoutTemplate, DEFAULT_EXERCISES } from '@/types/workout';
+import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExercise, WorkoutTemplate, DEFAULT_EXERCISES, DEFAULT_CARDIO_EXERCISES } from '@/types/workout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ interface WorkoutContextType {
   addExerciseToWorkout: (exerciseId: string) => void;
   removeExerciseFromWorkout: (exerciseId: string) => void;
   addSet: (exerciseId: string) => void;
-  updateSet: (exerciseId: string, setId: string, field: 'weight' | 'reps', value: number) => void;
+  updateSet: (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance', value: number) => void;
   reorderExercise: (exerciseId: string, direction: 'up' | 'down') => void;
   removeSet: (exerciseId: string, setId: string) => void;
   finishWorkout: () => void;
@@ -81,12 +81,38 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: true });
       
       if (dbExercises && dbExercises.length > 0) {
-        setExercises(dbExercises.map(e => ({
+        let loaded: Exercise[] = dbExercises.map(e => ({
           id: e.id,
           name: e.name,
           muscleGroup: e.muscle_group as Exercise['muscleGroup'],
           equipment: e.equipment as Exercise['equipment'],
-        })));
+        }));
+
+        // Seed default cardio exercises for existing users who don't have them yet
+        const missingCardio = DEFAULT_CARDIO_EXERCISES.filter(
+          c => !loaded.some(l => l.name.toLowerCase() === c.name.toLowerCase())
+        );
+        if (missingCardio.length > 0) {
+          const rows = missingCardio.map(c => ({
+            id: crypto.randomUUID(),
+            user_id: user.id,
+            name: c.name,
+            muscle_group: c.muscleGroup,
+            equipment: c.equipment,
+          }));
+          await supabase.from('exercises').insert(rows);
+          loaded = [
+            ...loaded,
+            ...rows.map(r => ({
+              id: r.id,
+              name: r.name,
+              muscleGroup: r.muscle_group as Exercise['muscleGroup'],
+              equipment: r.equipment as Exercise['equipment'],
+            })),
+          ];
+        }
+
+        setExercises(loaded);
       } else {
         // First login — seed defaults and migrate localStorage
         await migrateLocalData();
@@ -304,7 +330,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const updateSet = useCallback((exerciseId: string, setId: string, field: 'weight' | 'reps', value: number) => {
+  const updateSet = useCallback((exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance', value: number) => {
     setActiveWorkout(prev => {
       if (!prev) return prev;
       return {

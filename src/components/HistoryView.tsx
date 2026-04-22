@@ -65,20 +65,26 @@ export default function HistoryView() {
                   <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
                     {log.exercises.map(we => {
                       const exercise = getExerciseById(we.exerciseId);
+                      const isCardio = exercise?.equipment === 'Cardio Machine' || exercise?.muscleGroup === 'Cardio';
+                      const distanceUnit = unit === 'kg' ? 'km' : 'mi';
                       return (
                         <div key={we.exerciseId}>
                           <p className="font-medium text-foreground text-sm">{exercise?.name ?? 'Unknown'}</p>
                           <p className="text-xs text-muted-foreground mb-1">{exercise?.muscleGroup} · {exercise?.equipment}</p>
                           <div className="grid grid-cols-3 gap-1 text-xs text-muted-foreground mb-1">
                             <span>SET</span>
-                            <span className="text-center">WEIGHT</span>
-                            <span className="text-center">REPS</span>
+                            <span className="text-center">{isCardio ? 'TIME' : 'WEIGHT'}</span>
+                            <span className="text-center">{isCardio ? 'DISTANCE' : 'REPS'}</span>
                           </div>
                           {we.sets.map(set => (
                             <div key={set.id} className="grid grid-cols-3 gap-1 text-sm text-foreground">
                               <span className="text-muted-foreground">{set.setNumber}</span>
-                              <span className="text-center">{set.weight} {unit}</span>
-                              <span className="text-center">{set.reps}</span>
+                              <span className="text-center">
+                                {isCardio ? `${set.duration ?? 0} min` : `${set.weight} ${unit}`}
+                              </span>
+                              <span className="text-center">
+                                {isCardio ? `${set.distance ?? 0} ${distanceUnit}` : set.reps}
+                              </span>
                             </div>
                           ))}
                         </div>
