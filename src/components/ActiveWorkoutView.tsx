@@ -172,11 +172,12 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
     }
   };
 
-  const adjustValue = (exerciseId: string, setId: string, field: 'weight' | 'reps', delta: number) => {
+  const adjustValue = (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance', delta: number) => {
     const ex = activeWorkout.exercises.find(e => e.exerciseId === exerciseId);
     const set = ex?.sets.find(s => s.id === setId);
     if (!set) return;
-    const newVal = Math.max(0, set[field] + delta);
+    const current = (set[field] as number | undefined) ?? 0;
+    const newVal = Math.max(0, Math.round((current + delta) * 10) / 10);
     updateSet(exerciseId, setId, field, newVal);
   };
 
