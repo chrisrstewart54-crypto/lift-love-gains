@@ -255,7 +255,10 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
 
             {we.sets.length > 0 && (
               <div className="px-3 py-2 space-y-2">
-                {we.sets.map(set => (
+                {we.sets.map(set => {
+                  const cardio = isCardioExercise(exercise);
+                  const distanceUnit = unit === 'kg' ? 'km' : 'mi';
+                  return (
                   <div key={set.id} className={`rounded-lg p-3 ${
                     prSets.has(set.id)
                       ? 'bg-yellow-500/15 border-2 border-yellow-500/50 ring-2 ring-yellow-500/20'
@@ -290,6 +293,61 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
                         </button>
                       </div>
                     </div>
+                    {cardio ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Time (min)</label>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => adjustValue(we.exerciseId, set.id, 'duration', -1)}
+                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={set.duration || ''}
+                              onChange={e => updateSet(we.exerciseId, set.id, 'duration', Number(e.target.value) || 0)}
+                              className="flex-1 h-9 rounded-lg bg-background text-foreground text-center font-semibold text-sm min-w-0"
+                              placeholder="0"
+                            />
+                            <button
+                              onClick={() => adjustValue(we.exerciseId, set.id, 'duration', 1)}
+                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Distance ({distanceUnit})</label>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => adjustValue(we.exerciseId, set.id, 'distance', -0.1)}
+                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              step="0.1"
+                              value={set.distance || ''}
+                              onChange={e => updateSet(we.exerciseId, set.id, 'distance', Number(e.target.value) || 0)}
+                              className="flex-1 h-9 rounded-lg bg-background text-foreground text-center font-semibold text-sm min-w-0"
+                              placeholder="0"
+                            />
+                            <button
+                              onClick={() => adjustValue(we.exerciseId, set.id, 'distance', 0.1)}
+                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Weight ({unit})</label>
@@ -342,8 +400,10 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
                         </div>
                       </div>
                     </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
