@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExercise, WorkoutTemplate, DEFAULT_EXERCISES } from '@/types/workout';
+import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExercise, WorkoutTemplate, DEFAULT_EXERCISES, DEFAULT_CARDIO_EXERCISES } from '@/types/workout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
