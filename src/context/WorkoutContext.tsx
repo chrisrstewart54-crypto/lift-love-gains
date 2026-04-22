@@ -81,12 +81,38 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: true });
       
       if (dbExercises && dbExercises.length > 0) {
-        setExercises(dbExercises.map(e => ({
+        let loaded: Exercise[] = dbExercises.map(e => ({
           id: e.id,
           name: e.name,
           muscleGroup: e.muscle_group as Exercise['muscleGroup'],
           equipment: e.equipment as Exercise['equipment'],
-        })));
+        }));
+
+        // Seed default cardio exercises for existing users who don't have them yet
+        const missingCardio = DEFAULT_CARDIO_EXERCISES.filter(
+          c => !loaded.some(l => l.name.toLowerCase() === c.name.toLowerCase())
+        );
+        if (missingCardio.length > 0) {
+          const rows = missingCardio.map(c => ({
+            id: crypto.randomUUID(),
+            user_id: user.id,
+            name: c.name,
+            muscle_group: c.muscleGroup,
+            equipment: c.equipment,
+          }));
+          await supabase.from('exercises').insert(rows);
+          loaded = [
+            ...loaded,
+            ...rows.map(r => ({
+              id: r.id,
+              name: r.name,
+              muscleGroup: r.muscle_group as Exercise['muscleGroup'],
+              equipment: r.equipment as Exercise['equipment'],
+            })),
+          ];
+        }
+
+        setExercises(loaded);
       } else {
         // First login — seed defaults and migrate localStorage
         await migrateLocalData();
