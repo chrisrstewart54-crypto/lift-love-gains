@@ -54,8 +54,9 @@ export interface WorkoutTemplate {
   exerciseIds: string[];
 }
 
-// Helper to calculate volume with dumbbell multiplier (2x weight for dumbbells)
+// Helper to calculate volume with dumbbell multiplier (2x weight for dumbbells). Cardio returns 0.
 export function calculateSetVolume(weight: number, reps: number, equipment?: string): number {
+  if (equipment === 'Cardio Machine') return 0;
   const multiplier = equipment === 'Dumbbell' ? 2 : 1;
   return weight * reps * multiplier;
 }
