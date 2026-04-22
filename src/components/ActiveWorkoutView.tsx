@@ -245,11 +245,17 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
               <div className="px-4 py-2 bg-muted border-b border-border">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Last Session:</p>
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-                  {lastRecord.map(s => (
-                    <span key={s.id} className="text-xs text-foreground whitespace-nowrap">
-                      S{s.setNumber}: {s.weight}{unit} × {s.reps}
-                    </span>
-                  ))}
+                  {lastRecord.map(s => {
+                    const cardio = isCardioExercise(exercise);
+                    const distanceUnit = unit === 'kg' ? 'km' : 'mi';
+                    return (
+                      <span key={s.id} className="text-xs text-foreground whitespace-nowrap">
+                        S{s.setNumber}: {cardio
+                          ? `${s.duration ?? 0}min · ${s.distance ?? 0}${distanceUnit}`
+                          : `${s.weight}${unit} × ${s.reps}`}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}
