@@ -1,10 +1,15 @@
 export type MuscleGroup = 
   | 'Chest' | 'Back' | 'Shoulders' | 'Biceps' | 'Triceps' 
-  | 'Legs' | 'Glutes' | 'Core' | 'Forearms' | 'Calves' | 'Full Body';
+  | 'Legs' | 'Glutes' | 'Core' | 'Forearms' | 'Calves' | 'Full Body' | 'Cardio';
 
 export type Equipment = 
   | 'Barbell' | 'Dumbbell' | 'Machine' | 'Cable' | 'Bodyweight' 
-  | 'Kettlebell' | 'Bands' | 'Other';
+  | 'Kettlebell' | 'Bands' | 'Cardio Machine' | 'Other';
+
+export function isCardioExercise(exercise?: { muscleGroup?: string; equipment?: string } | null): boolean {
+  if (!exercise) return false;
+  return exercise.muscleGroup === 'Cardio' || exercise.equipment === 'Cardio Machine';
+}
 
 export type WeightUnit = 'lbs' | 'kg';
 
@@ -20,6 +25,8 @@ export interface SetData {
   setNumber: number;
   weight: number;
   reps: number;
+  duration?: number; // minutes (cardio)
+  distance?: number; // distance in user's distance unit (cardio)
 }
 
 export interface WorkoutExercise {
@@ -55,12 +62,19 @@ export function calculateSetVolume(weight: number, reps: number, equipment?: str
 
 export const MUSCLE_GROUPS: MuscleGroup[] = [
   'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps',
-  'Legs', 'Glutes', 'Core', 'Forearms', 'Calves', 'Full Body'
+  'Legs', 'Glutes', 'Core', 'Forearms', 'Calves', 'Full Body', 'Cardio'
 ];
 
 export const EQUIPMENT_TYPES: Equipment[] = [
   'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight',
-  'Kettlebell', 'Bands', 'Other'
+  'Kettlebell', 'Bands', 'Cardio Machine', 'Other'
+];
+
+export const DEFAULT_CARDIO_EXERCISES: Omit<Exercise, 'id'>[] = [
+  { name: 'Treadmill', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
+  { name: 'Rowing Machine', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
+  { name: 'Elliptical Trainer', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
+  { name: 'Exercise Bike', muscleGroup: 'Cardio', equipment: 'Cardio Machine' },
 ];
 
 export const DEFAULT_EXERCISES: Exercise[] = [
