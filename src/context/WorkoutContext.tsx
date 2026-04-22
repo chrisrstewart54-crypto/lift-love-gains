@@ -19,7 +19,7 @@ interface WorkoutContextType {
   addExerciseToWorkout: (exerciseId: string) => void;
   removeExerciseFromWorkout: (exerciseId: string) => void;
   addSet: (exerciseId: string) => void;
-  updateSet: (exerciseId: string, setId: string, field: 'weight' | 'reps', value: number) => void;
+  updateSet: (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance', value: number) => void;
   reorderExercise: (exerciseId: string, direction: 'up' | 'down') => void;
   removeSet: (exerciseId: string, setId: string) => void;
   finishWorkout: () => void;
@@ -330,7 +330,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const updateSet = useCallback((exerciseId: string, setId: string, field: 'weight' | 'reps', value: number) => {
+  const updateSet = useCallback((exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance', value: number) => {
     setActiveWorkout(prev => {
       if (!prev) return prev;
       return {
