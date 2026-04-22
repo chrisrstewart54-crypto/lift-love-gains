@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
 import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy, ArrowUp, ArrowDown } from 'lucide-react';
+import { isCardioExercise } from '@/types/workout';
 import RestTimer from './RestTimer';
 
 interface ActiveWorkoutViewProps {
