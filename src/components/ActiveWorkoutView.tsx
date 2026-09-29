@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
 import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy, ArrowUp, ArrowDown } from 'lucide-react';
-import { isCardioExercise } from '@/types/workout';
 import RestTimer from './RestTimer';
 
 interface ActiveWorkoutViewProps {
@@ -24,42 +23,8 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [showRestTimer, setShowRestTimer] = useState(false);
-  const [completedSets, setCompletedSets] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem('activeWorkout:completedSets');
-      return raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { return new Set(); }
-  });
-  const [prSets, setPrSets] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem('activeWorkout:prSets');
-      return raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { return new Set(); }
-  });
-
-  // Persist set-completion state so it survives the phone sleeping / webview reload
-  useEffect(() => {
-    try {
-      localStorage.setItem('activeWorkout:completedSets', JSON.stringify([...completedSets]));
-    } catch {}
-  }, [completedSets]);
-  useEffect(() => {
-    try {
-      localStorage.setItem('activeWorkout:prSets', JSON.stringify([...prSets]));
-    } catch {}
-  }, [prSets]);
-
-  // Clear persisted set state when the workout ends (activeWorkout becomes null)
-  useEffect(() => {
-    if (!activeWorkout) {
-      setCompletedSets(new Set());
-      setPrSets(new Set());
-      try {
-        localStorage.removeItem('activeWorkout:completedSets');
-        localStorage.removeItem('activeWorkout:prSets');
-      } catch {}
-    }
-  }, [activeWorkout]);
+  const [completedSets, setCompletedSets] = useState<Set<string>>(new Set());
+  const [prSets, setPrSets] = useState<Set<string>>(new Set());
 
   const getMaxWeight = (exerciseId: string): number => {
     let max = 0;
@@ -172,12 +137,11 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
     }
   };
 
-  const adjustValue = (exerciseId: string, setId: string, field: 'weight' | 'reps' | 'duration' | 'distance', delta: number) => {
+  const adjustValue = (exerciseId: string, setId: string, field: 'weight' | 'reps', delta: number) => {
     const ex = activeWorkout.exercises.find(e => e.exerciseId === exerciseId);
     const set = ex?.sets.find(s => s.id === setId);
     if (!set) return;
-    const current = (set[field] as number | undefined) ?? 0;
-    const newVal = Math.max(0, Math.round((current + delta) * 10) / 10);
+    const newVal = Math.max(0, set[field] + delta);
     updateSet(exerciseId, setId, field, newVal);
   };
 
@@ -245,27 +209,18 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
               <div className="px-4 py-2 bg-muted border-b border-border">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Last Session:</p>
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-                  {lastRecord.map(s => {
-                    const cardio = isCardioExercise(exercise);
-                    const distanceUnit = unit === 'kg' ? 'km' : 'mi';
-                    return (
-                      <span key={s.id} className="text-xs text-foreground whitespace-nowrap">
-                        S{s.setNumber}: {cardio
-                          ? `${s.duration ?? 0}min · ${s.distance ?? 0}${distanceUnit}`
-                          : `${s.weight}${unit} × ${s.reps}`}
-                      </span>
-                    );
-                  })}
+                  {lastRecord.map(s => (
+                    <span key={s.id} className="text-xs text-foreground whitespace-nowrap">
+                      S{s.setNumber}: {s.weight}{unit} × {s.reps}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
 
             {we.sets.length > 0 && (
               <div className="px-3 py-2 space-y-2">
-                {we.sets.map(set => {
-                  const cardio = isCardioExercise(exercise);
-                  const distanceUnit = unit === 'kg' ? 'km' : 'mi';
-                  return (
+                {we.sets.map(set => (
                   <div key={set.id} className={`rounded-lg p-3 ${
                     prSets.has(set.id)
                       ? 'bg-yellow-500/15 border-2 border-yellow-500/50 ring-2 ring-yellow-500/20'
@@ -300,61 +255,6 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
                         </button>
                       </div>
                     </div>
-                    {cardio ? (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Time (min)</label>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => adjustValue(we.exerciseId, set.id, 'duration', -1)}
-                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
-                            >
-                              <Minus className="w-3.5 h-3.5" />
-                            </button>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              value={set.duration || ''}
-                              onChange={e => updateSet(we.exerciseId, set.id, 'duration', Number(e.target.value) || 0)}
-                              className="flex-1 h-9 rounded-lg bg-background text-foreground text-center font-semibold text-sm min-w-0"
-                              placeholder="0"
-                            />
-                            <button
-                              onClick={() => adjustValue(we.exerciseId, set.id, 'duration', 1)}
-                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Distance ({distanceUnit})</label>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => adjustValue(we.exerciseId, set.id, 'distance', -0.1)}
-                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
-                            >
-                              <Minus className="w-3.5 h-3.5" />
-                            </button>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              step="0.1"
-                              value={set.distance || ''}
-                              onChange={e => updateSet(we.exerciseId, set.id, 'distance', Number(e.target.value) || 0)}
-                              className="flex-1 h-9 rounded-lg bg-background text-foreground text-center font-semibold text-sm min-w-0"
-                              placeholder="0"
-                            />
-                            <button
-                              onClick={() => adjustValue(we.exerciseId, set.id, 'distance', 0.1)}
-                              className="w-9 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center active:bg-background shrink-0"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10px] text-muted-foreground uppercase mb-1 block">Weight ({unit})</label>
@@ -407,10 +307,8 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
                         </div>
                       </div>
                     </div>
-                    )}
                   </div>
-                  );
-                })}
+                ))}
               </div>
             )}
 
