@@ -40,7 +40,7 @@ function getWeeklyStats(logs: WorkoutLog[], getEquipment?: (id: string) => Equip
   for (const log of weekLogs) {
     for (const ex of log.exercises) {
       for (const s of ex.sets) {
-        totalVolume += s.weight * s.reps;
+        totalVolume += calculateSetVolume(s.weight, s.reps, getEquipment?.(ex.exerciseId));
         if (!weekMax[ex.exerciseId] || s.weight > weekMax[ex.exerciseId]) {
           weekMax[ex.exerciseId] = s.weight;
         }
