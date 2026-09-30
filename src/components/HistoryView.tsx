@@ -22,7 +22,12 @@ export default function HistoryView() {
             const isExpanded = expandedId === log.id;
             const totalSets = log.exercises.reduce((sum, e) => sum + e.sets.length, 0);
             const totalVolume = log.exercises.reduce(
-              (sum, e) => sum + e.sets.reduce((s, set) => s + set.weight * set.reps, 0), 0
+              (sum, e) => {
+                const equipment = getExerciseById(e.exerciseId)?.equipment;
+                return sum + e.sets.reduce(
+                  (s, set) => s + calculateSetVolume(set.weight, set.reps, equipment), 0
+                );
+              }, 0
             );
 
             return (
