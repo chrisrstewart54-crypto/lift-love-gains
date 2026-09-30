@@ -94,7 +94,7 @@ export function useWeeklyNotification(
 
     new Notification('Weekly Workout Summary', { body, icon: '/placeholder.svg' });
     localStorage.setItem(weekKey, 'sent');
-  }, [workoutLogs, getExerciseName]);
+  }, [workoutLogs, getExerciseName, getEquipment]);
 
   useEffect(() => {
     checkAndNotify();
