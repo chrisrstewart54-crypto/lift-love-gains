@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -17,6 +18,7 @@ function saveSetting(key: string, value: unknown) {
 }
 
 export default function SettingsView() {
+  const { user, signOut } = useAuth();
   const [notifDay, setNotifDay] = useState<number>(() => loadSetting('notifDay', 0));
   const [notifHour, setNotifHour] = useState<number>(() => loadSetting('notifHour', 20));
   const [notifEnabled, setNotifEnabled] = useState<boolean>(() => loadSetting('notifEnabled', true));
@@ -163,6 +165,13 @@ export default function SettingsView() {
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="bg-card rounded-xl border border-border p-4 space-y-3">
+        <p className="text-sm text-muted-foreground">Signed in as {user?.email}</p>
+        <button onClick={signOut} className="w-full py-3 rounded-lg bg-destructive text-destructive-foreground font-medium">
+          Sign out
+        </button>
       </section>
     </div>
   );

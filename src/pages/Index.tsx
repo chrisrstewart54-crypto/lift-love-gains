@@ -8,6 +8,8 @@ import HistoryView from '@/components/HistoryView';
 import ProgressView from '@/components/ProgressView';
 import SettingsView from '@/components/SettingsView';
 import { useWeeklyNotification } from '@/hooks/useWeeklyNotification';
+import { useAuth } from '@/context/AuthContext';
+import Auth from './Auth';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -33,6 +35,9 @@ function AppContent() {
 }
 
 export default function Index() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen bg-background" />;
+  if (!user) return <Auth />;
   return (
     <WorkoutProvider>
       <AppContent />
