@@ -83,7 +83,7 @@ export function useWeeklyNotification(
     }
     if (Notification.permission !== 'granted') return;
 
-    const { numWorkouts, totalVolume, prs } = getWeeklyStats(workoutLogs);
+    const { numWorkouts, totalVolume, prs } = getWeeklyStats(workoutLogs, getEquipment);
     if (numWorkouts === 0) return;
 
     const prNames = prs.map(id => getExerciseName(id)).filter(Boolean);
