@@ -3,6 +3,7 @@ import { useWorkout } from '@/context/WorkoutContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
+import AICoach from './AICoach';
 
 type Metric = 'e1rm' | 'maxWeight';
 
@@ -132,6 +133,8 @@ export default function ProgressView() {
           ))}
         </div>
       )}
+
+      <AICoach exerciseId={selectedExercise} />
     </div>
   );
 }
