@@ -59,7 +59,8 @@ function getWeeklyStats(logs: WorkoutLog[], getEquipment?: (id: string) => Equip
 
 export function useWeeklyNotification(
   workoutLogs: WorkoutLog[],
-  getExerciseName: (id: string) => string | undefined
+  getExerciseName: (id: string) => string | undefined,
+  getEquipment?: (id: string) => Equipment | undefined
 ) {
   const checkAndNotify = useCallback(() => {
     if (!('Notification' in window)) return;
