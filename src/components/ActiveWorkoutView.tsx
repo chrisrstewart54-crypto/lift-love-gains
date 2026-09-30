@@ -117,10 +117,23 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
     );
   }
 
-  const filteredExercises = exercises.filter(e =>
-    e.name.toLowerCase().includes(search.toLowerCase()) &&
-    !activeWorkout.exercises.some(we => we.exerciseId === e.id)
-  );
+  // Count how often each exercise appears in past workouts
+  const usageCount = new Map<string, number>();
+  for (const log of workoutLogs) {
+    for (const e of log.exercises) {
+      usageCount.set(e.exerciseId, (usageCount.get(e.exerciseId) ?? 0) + 1);
+    }
+  }
+
+  const filteredExercises = exercises
+    .filter(e =>
+      e.name.toLowerCase().includes(search.toLowerCase()) &&
+      !activeWorkout.exercises.some(we => we.exerciseId === e.id)
+    )
+    .sort((a, b) =>
+      (usageCount.get(b.id) ?? 0) - (usageCount.get(a.id) ?? 0) ||
+      a.name.localeCompare(b.name)
+    );
 
   const handleFinish = () => {
     finishWorkout();
