@@ -2,6 +2,7 @@ import { useWorkout } from '@/context/WorkoutContext';
 import { format } from 'date-fns';
 import { Calendar, Clock, Dumbbell, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import { calculateSetVolume } from '@/types/workout';
 
 export default function HistoryView() {
   const { workoutLogs, unit, getExerciseById } = useWorkout();
