@@ -1,5 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutExercise, WorkoutTemplate, DEFAULT_EXERCISES } from '@/types/workout';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { Exercise, WorkoutLog, ActiveWorkout, WeightUnit, SetData, WorkoutTemplate, DEFAULT_EXERCISES, MuscleGroup, Equipment } from '@/types/workout';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
 
 interface WorkoutContextType {
   exercises: Exercise[];
@@ -50,23 +54,94 @@ const LBS_TO_KG = 0.453592;
 const KG_TO_LBS = 2.20462;
 
 export function WorkoutProvider({ children }: { children: React.ReactNode }) {
-  const [exercises, setExercises] = useState<Exercise[]>(() => loadFromStorage('exercises', DEFAULT_EXERCISES));
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>(() => loadFromStorage('workoutLogs', []));
+  const { user } = useAuth();
+  const userId = user?.id;
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkout | null>(() => loadFromStorage('activeWorkout', null));
   const [unit, setUnit] = useState<WeightUnit>(() => loadFromStorage('weightUnit', 'lbs'));
-  const [templates, setTemplates] = useState<WorkoutTemplate[]>(() => loadFromStorage('workoutTemplates', []));
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const loadedFor = useRef<string | null>(null);
 
-  useEffect(() => saveToStorage('exercises', exercises), [exercises]);
-  useEffect(() => saveToStorage('workoutLogs', workoutLogs), [workoutLogs]);
   useEffect(() => saveToStorage('activeWorkout', activeWorkout), [activeWorkout]);
   useEffect(() => saveToStorage('weightUnit', unit), [unit]);
-  useEffect(() => saveToStorage('workoutTemplates', templates), [templates]);
 
-  const addExercise = useCallback((exercise: Omit<Exercise, 'id'>) => {
-    setExercises(prev => [...prev, { ...exercise, id: generateId() }]);
-  }, []);
+  const fail = (what: string, error: unknown) => {
+    console.error(what, error);
+    toast.error(`Couldn't sync ${what}. Check your connection.`);
+  };
 
-  const deleteExercise = useCallback((id: string) => {
+  // Load from cloud; on first sign-in, copy any data saved on this device
+  useEffect(() => {
+    if (!userId || loadedFor.current === userId) return;
+    loadedFor.current = userId;
+    (async () => {
+      const [exR, logR, tplR, profR] = await Promise.all([
+        supabase.from('exercises').select('*').order('created_at'),
+        supabase.from('workout_logs').select('*').order('date', { ascending: false }),
+        supabase.from('workout_templates').select('*').order('created_at'),
+        supabase.from('profiles').select('weight_unit').eq('user_id', userId).maybeSingle(),
+      ]);
+      if (exR.error || logR.error || tplR.error) return fail('your data', exR.error || logR.error || tplR.error);
+      if (profR.data?.weight_unit === 'kg' || profR.data?.weight_unit === 'lbs') setUnit(profR.data.weight_unit);
+
+      let exs: Exercise[] = exR.data.map(r => ({ id: r.id, name: r.name, muscleGroup: r.muscle_group as MuscleGroup, equipment: r.equipment as Equipment }));
+      let logs: WorkoutLog[] = logR.data.map(r => ({ id: r.id, name: r.name, date: r.date, duration: r.duration, exercises: (r.exercises as unknown as WorkoutLog['exercises']) ?? [] }));
+      let tpls: WorkoutTemplate[] = tplR.data.map(r => ({ id: r.id, name: r.name, exerciseIds: r.exercise_ids }));
+
+      if (exs.length === 0) {
+        // First time: seed from this device (or defaults) and migrate local history
+        const localEx: Exercise[] = loadFromStorage('exercises', DEFAULT_EXERCISES);
+        const { data, error } = await supabase.from('exercises').insert(
+          localEx.map(e => ({ user_id: userId, name: e.name, muscle_group: e.muscleGroup, equipment: e.equipment }))
+        ).select();
+        if (error || !data) return fail('exercises', error);
+        const idMap = new Map<string, string>();
+        localEx.forEach((e, i) => idMap.set(e.id, data[i].id));
+        exs = data.map(r => ({ id: r.id, name: r.name, muscleGroup: r.muscle_group as MuscleGroup, equipment: r.equipment as Equipment }));
+        const remap = (id: string) => idMap.get(id) ?? id;
+
+        const localLogs: WorkoutLog[] = loadFromStorage('workoutLogs', []);
+        if (localLogs.length && logs.length === 0) {
+          const { data: ld, error: le } = await supabase.from('workout_logs').insert(localLogs.map(l => ({
+            user_id: userId, name: l.name, date: l.date, duration: l.duration ?? 0,
+            exercises: l.exercises.map(e => ({ ...e, exerciseId: remap(e.exerciseId) })) as unknown as Json,
+          }))).select();
+          if (le || !ld) return fail('workout history', le);
+          logs = ld.map(r => ({ id: r.id, name: r.name, date: r.date, duration: r.duration, exercises: r.exercises as unknown as WorkoutLog['exercises'] }))
+            .sort((a, b) => b.date.localeCompare(a.date));
+        }
+        const localTpl: WorkoutTemplate[] = loadFromStorage('workoutTemplates', []);
+        if (localTpl.length && tpls.length === 0) {
+          const { data: td, error: te } = await supabase.from('workout_templates').insert(localTpl.map(t => ({
+            user_id: userId, name: t.name, exercise_ids: t.exerciseIds.map(remap),
+          }))).select();
+          if (te || !td) return fail('templates', te);
+          tpls = td.map(r => ({ id: r.id, name: r.name, exerciseIds: r.exercise_ids }));
+        }
+        // Remap any in-progress workout
+        setActiveWorkout(aw => aw ? { ...aw, exercises: aw.exercises.map(e => ({ ...e, exerciseId: remap(e.exerciseId) })) } : aw);
+        // Only clear local copies once everything uploaded successfully
+        ['exercises', 'workoutLogs', 'workoutTemplates'].forEach(k => localStorage.removeItem(k));
+      }
+      setExercises(exs);
+      setWorkoutLogs(logs);
+      setTemplates(tpls);
+    })();
+  }, [userId]);
+
+  const addExercise = useCallback(async (exercise: Omit<Exercise, 'id'>) => {
+    if (!userId) return;
+    const { data, error } = await supabase.from('exercises').insert({
+      user_id: userId, name: exercise.name, muscle_group: exercise.muscleGroup, equipment: exercise.equipment,
+    }).select().single();
+    if (error || !data) return fail('exercise', error);
+    setExercises(prev => [...prev, { ...exercise, id: data.id }]);
+  }, [userId]);
+
+  const deleteExercise = useCallback(async (id: string) => {
+    const { error } = await supabase.from('exercises').delete().eq('id', id);
+    if (error) return fail('exercise', error);
     setExercises(prev => prev.filter(e => e.id !== id));
   }, []);
 
@@ -84,11 +159,16 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     });
   }, [templates]);
 
-  const saveAsTemplate = useCallback((name: string, exerciseIds: string[]) => {
-    setTemplates(prev => [...prev, { id: generateId(), name, exerciseIds }]);
-  }, []);
+  const saveAsTemplate = useCallback(async (name: string, exerciseIds: string[]) => {
+    if (!userId) return;
+    const { data, error } = await supabase.from('workout_templates').insert({ user_id: userId, name, exercise_ids: exerciseIds }).select().single();
+    if (error || !data) return fail('template', error);
+    setTemplates(prev => [...prev, { id: data.id, name, exerciseIds }]);
+  }, [userId]);
 
-  const deleteTemplate = useCallback((id: string) => {
+  const deleteTemplate = useCallback(async (id: string) => {
+    const { error } = await supabase.from('workout_templates').delete().eq('id', id);
+    if (error) return fail('template', error);
     setTemplates(prev => prev.filter(t => t.id !== id));
   }, []);
 
@@ -168,8 +248,8 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const finishWorkout = useCallback(() => {
-    if (!activeWorkout) return;
+  const finishWorkout = useCallback(async () => {
+    if (!activeWorkout || !userId) return;
     const exercisesWithSets = activeWorkout.exercises.filter(e => e.sets.length > 0);
     const log: WorkoutLog = {
       id: generateId(),
@@ -178,9 +258,17 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       exercises: exercisesWithSets,
       duration: Math.round((Date.now() - new Date(activeWorkout.startedAt).getTime()) / 60000),
     };
-    setWorkoutLogs(prev => [log, ...prev]);
+    const { data, error } = await supabase.from('workout_logs').insert({
+      user_id: userId, name: log.name, date: log.date, duration: log.duration ?? 0,
+      exercises: log.exercises as unknown as Json,
+    }).select().single();
+    if (error || !data) {
+      // Keep the active workout so nothing is lost; user can retry
+      return fail('workout', error);
+    }
+    setWorkoutLogs(prev => [{ ...log, id: data.id }, ...prev]);
     setActiveWorkout(null);
-  }, [activeWorkout]);
+  }, [activeWorkout, userId]);
 
   const cancelWorkout = useCallback(() => {
     setActiveWorkout(null);
@@ -206,20 +294,27 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         };
       });
 
-      // Convert logs
-      setWorkoutLogs(logs =>
-        logs.map(log => ({
+      // Convert logs (and save converted values to the cloud)
+      setWorkoutLogs(logs => {
+        const converted = logs.map(log => ({
           ...log,
           exercises: log.exercises.map(e => ({
             ...e,
             sets: e.sets.map(s => ({ ...s, weight: convert(s.weight, toKg) })),
           })),
-        }))
-      );
+        }));
+        converted.forEach(l => {
+          supabase.from('workout_logs').update({ exercises: l.exercises as unknown as Json }).eq('id', l.id)
+            .then(({ error }) => { if (error) console.error(error); });
+        });
+        return converted;
+      });
+      if (userId) supabase.from('profiles').update({ weight_unit: newUnit }).eq('user_id', userId)
+        .then(({ error }) => { if (error) console.error(error); });
 
       return newUnit;
     });
-  }, []);
+  }, [userId]);
 
   const getLastRecord = useCallback((exerciseId: string): SetData[] | null => {
     for (const log of workoutLogs) {
