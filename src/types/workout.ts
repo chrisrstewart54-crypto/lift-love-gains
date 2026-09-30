@@ -47,6 +47,12 @@ export interface WorkoutTemplate {
   exerciseIds: string[];
 }
 
+// Dumbbell weights are recorded per side, so total load is doubled.
+export function calculateSetVolume(weight: number, reps: number, equipment?: Equipment): number {
+  const multiplier = equipment === 'Dumbbell' ? 2 : 1;
+  return (weight || 0) * (reps || 0) * multiplier;
+}
+
 export const MUSCLE_GROUPS: MuscleGroup[] = [
   'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps',
   'Legs', 'Glutes', 'Core', 'Forearms', 'Calves', 'Full Body'
