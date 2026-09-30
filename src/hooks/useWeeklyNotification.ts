@@ -16,7 +16,7 @@ function loadSetting<T>(key: string, fallback: T): T {
   } catch { return fallback; }
 }
 
-function getWeeklyStats(logs: WorkoutLog[]) {
+function getWeeklyStats(logs: WorkoutLog[], getEquipment?: (id: string) => Equipment | undefined) {
   const weekStart = getWeekStart(new Date());
   const weekLogs = logs.filter(l => new Date(l.date) >= weekStart);
 
