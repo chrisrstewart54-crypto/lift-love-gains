@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
+import { calculateSetVolume } from '@/types/workout';
 import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy, ArrowUp, ArrowDown } from 'lucide-react';
 import RestTimer from './RestTimer';
 
@@ -135,6 +136,14 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
       a.name.localeCompare(b.name)
     );
 
+  // Live total volume across completed sets (dumbbells count 2x per-side weight)
+  const totalVolume = activeWorkout.exercises.reduce((sum, we) => {
+    const equipment = getExerciseById(we.exerciseId)?.equipment;
+    return sum + we.sets
+      .filter(s => completedSets.has(s.id))
+      .reduce((s, set) => s + calculateSetVolume(set.weight, set.reps, equipment), 0);
+  }, 0);
+
   const handleFinish = () => {
     finishWorkout();
     onFinish();
@@ -165,6 +174,14 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
         <button onClick={cancelWorkout} className="text-sm text-destructive font-medium px-3 py-1">
           Cancel
         </button>
+      </div>
+
+      {/* Live volume tracker */}
+      <div className="bg-card rounded-xl border border-border px-4 py-3 flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">Total Volume</span>
+        <span className="text-lg font-bold text-foreground">
+          {totalVolume.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">{unit}</span>
+        </span>
       </div>
 
       {/* Exercise list */}

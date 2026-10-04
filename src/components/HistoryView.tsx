@@ -71,16 +71,18 @@ export default function HistoryView() {
                         <div key={we.exerciseId}>
                           <p className="font-medium text-foreground text-sm">{exercise?.name ?? 'Unknown'}</p>
                           <p className="text-xs text-muted-foreground mb-1">{exercise?.muscleGroup} · {exercise?.equipment}</p>
-                          <div className="grid grid-cols-3 gap-1 text-xs text-muted-foreground mb-1">
+                          <div className="grid grid-cols-4 gap-1 text-xs text-muted-foreground mb-1">
                             <span>SET</span>
                             <span className="text-center">WEIGHT</span>
                             <span className="text-center">REPS</span>
+                            <span className="text-right">VOLUME</span>
                           </div>
                           {we.sets.map(set => (
-                            <div key={set.id} className="grid grid-cols-3 gap-1 text-sm text-foreground">
+                            <div key={set.id} className="grid grid-cols-4 gap-1 text-sm text-foreground">
                               <span className="text-muted-foreground">{set.setNumber}</span>
                               <span className="text-center">{set.weight} {unit}</span>
                               <span className="text-center">{set.reps}</span>
+                              <span className="text-right">{calculateSetVolume(set.weight, set.reps, exercise?.equipment).toLocaleString()} {unit}</span>
                             </div>
                           ))}
                         </div>
