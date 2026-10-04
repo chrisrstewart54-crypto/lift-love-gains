@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useWorkout } from '@/context/WorkoutContext';
+import { calculateSetVolume } from '@/types/workout';
 import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp, History, Check, X, Save, BookOpen, Trophy, ArrowUp, ArrowDown } from 'lucide-react';
 import RestTimer from './RestTimer';
 
@@ -134,6 +135,14 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
       (usageCount.get(b.id) ?? 0) - (usageCount.get(a.id) ?? 0) ||
       a.name.localeCompare(b.name)
     );
+
+  // Live total volume across completed sets (dumbbells count 2x per-side weight)
+  const totalVolume = activeWorkout.exercises.reduce((sum, we) => {
+    const equipment = getExerciseById(we.exerciseId)?.equipment;
+    return sum + we.sets
+      .filter(s => completedSets.has(s.id))
+      .reduce((s, set) => s + calculateSetVolume(set.weight, set.reps, equipment), 0);
+  }, 0);
 
   const handleFinish = () => {
     finishWorkout();
