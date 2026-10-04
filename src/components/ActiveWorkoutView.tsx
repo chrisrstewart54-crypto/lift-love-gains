@@ -176,6 +176,14 @@ export default function ActiveWorkoutView({ onFinish }: ActiveWorkoutViewProps) 
         </button>
       </div>
 
+      {/* Live volume tracker */}
+      <div className="bg-card rounded-xl border border-border px-4 py-3 flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">Total Volume</span>
+        <span className="text-lg font-bold text-foreground">
+          {totalVolume.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">{unit}</span>
+        </span>
+      </div>
+
       {/* Exercise list */}
       {activeWorkout.exercises.map((we, weIdx) => {
         const exercise = getExerciseById(we.exerciseId);
