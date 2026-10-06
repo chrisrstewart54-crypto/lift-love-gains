@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { enablePush, disablePush, getExistingSubscription, sendTestPush, updateSchedule } from '@/services/pushNotifications';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -44,6 +45,44 @@ export default function SettingsView() {
     const suffix = h >= 12 ? 'PM' : 'AM';
     const hr = h % 12 || 12;
     return `${hr}:00 ${suffix}`;
+  };
+
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
+  const unit = (() => { try { return localStorage.getItem('weightUnit')?.replace(/"/g, '') || 'lbs'; } catch { return 'lbs'; } })();
+
+  useEffect(() => { getExistingSubscription().then(s => setPushOn(!!s)).catch(() => {}); }, []);
+  useEffect(() => {
+    if (pushOn) updateSchedule({ day: notifDay, hour: notifHour, unit }).catch(() => {});
+  }, [notifDay, notifHour, pushOn, unit]);
+
+  const PUSH_MESSAGES: Record<string, string> = {
+    unsupported: 'This browser does not support push notifications. On iPhone, add the app to your Home Screen first.',
+    'open-in-new-tab': 'Open the published app (not the editor preview) to enable push.',
+    denied: 'Notifications are blocked. Allow them in your browser site settings.',
+    'no-sw': 'Push works only in the installed/published app. Open it there and try again.',
+    error: 'Could not register this device. Please try again.',
+  };
+
+  const togglePush = async () => {
+    setPushBusy(true); setPushMsg(null);
+    try {
+      if (pushOn) { await disablePush(); setPushOn(false); }
+      else {
+        const r = await enablePush({ day: notifDay, hour: notifHour, unit });
+        if (r === 'subscribed') { setPushOn(true); setPushMsg('This device will receive your weekly summary.'); }
+        else setPushMsg(PUSH_MESSAGES[r]);
+      }
+    } catch { setPushMsg('Something went wrong. Please try again.'); }
+    setPushBusy(false);
+  };
+
+  const testPush = async () => {
+    setPushBusy(true); setPushMsg(null);
+    try { const r = await sendTestPush(); setPushMsg(`Test sent to ${r.sent} device(s).`); }
+    catch { setPushMsg('Test failed. Make sure push is enabled on this device.'); }
+    setPushBusy(false);
   };
 
   const requestPermission = async () => {
@@ -96,6 +135,31 @@ export default function SettingsView() {
                 >
                   {HOURS.map(h => <option key={h} value={h}>{formatHour(h)}</option>)}
                 </select>
+              </div>
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-foreground block">Push to this device</span>
+                    <span className="text-xs text-muted-foreground">Arrives even when the app is closed</span>
+                  </div>
+                  <button
+                    disabled={pushBusy}
+                    onClick={togglePush}
+                    className={`w-12 h-7 rounded-full transition-colors relative disabled:opacity-50 ${pushOn ? 'bg-primary' : 'bg-muted'}`}
+                  >
+                    <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-foreground transition-transform ${pushOn ? 'left-[22px]' : 'left-0.5'}`} />
+                  </button>
+                </div>
+                {pushOn && (
+                  <button
+                    disabled={pushBusy}
+                    onClick={testPush}
+                    className="w-full py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium disabled:opacity-50"
+                  >
+                    Send test push
+                  </button>
+                )}
+                {pushMsg && <p className="text-xs text-muted-foreground">{pushMsg}</p>}
               </div>
             </>
           )}
