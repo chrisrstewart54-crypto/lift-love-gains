@@ -1,0 +1,3 @@
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+SELECT cron.schedule('weekly-summary-push','0 * * * *', $cron$ select net.http_post(url:='https://nzgrqbebpasocxlswtqk.supabase.co/functions/v1/send-weekly-summary', headers:='{"Content-Type":"application/json","apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56Z3JxYmVicGFzb2N4bHN3dHFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjAzNjQsImV4cCI6MjA5MTM5NjM2NH0.xyuEx1Nn_w1FT5DHLT0j6ZSgZ95c5mcC-6Bm0C3qX7s"}'::jsonb, body:='{}'::jsonb) $cron$);
