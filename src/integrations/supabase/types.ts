@@ -65,6 +65,51 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_sent_week: string | null
+          notif_day: number
+          notif_hour: number
+          p256dh: string
+          timezone: string
+          updated_at: string
+          user_id: string
+          weight_unit: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_sent_week?: string | null
+          notif_day?: number
+          notif_hour?: number
+          p256dh: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          weight_unit?: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_sent_week?: string | null
+          notif_day?: number
+          notif_hour?: number
+          p256dh?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          weight_unit?: string
+        }
+        Relationships: []
+      }
       workout_logs: {
         Row: {
           created_at: string
