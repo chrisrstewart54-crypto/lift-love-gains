@@ -15,6 +15,13 @@
       "when": 1791297093000,
       "tag": "0001_weekly_push_cron",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792927398292,
+      "tag": "0002_create_summary_preferences",
+      "breakpoints": true
     }
   ]
 }
