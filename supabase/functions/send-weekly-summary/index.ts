@@ -169,7 +169,7 @@ async function deliverEmailSummary(
   test = false,
 ) {
   const { count, volume, prs } = await buildSummary(admin, userId, tz, unit);
-  if (count === 0) return { sent: false, reason: "no-workouts" };
+  if (count === 0 && !test) return { sent: false, reason: "no-workouts" };
   const html = buildSummaryHtml(count, volume, prs, unit, test);
   const subject = test ? "Weekly Workout Summary (test)" : "Weekly Workout Summary";
   await sendGmailEmail(to, subject, html);
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
       const unit = typeof body.unit === "string" && body.unit ? body.unit : "lbs";
       try {
         const r = await deliverEmailSummary(admin, userId, to, tz, unit, true);
-        if (!r.sent) return json({ error: `Nothing to send yet — no workouts this week.` }, 400);
+        if (!r.sent) return json({ error: "Email send failed" }, 502);
         return json({ sent: 1 });
       } catch (e: any) {
         return json({ error: e?.message ?? "Email send failed" }, 502);
