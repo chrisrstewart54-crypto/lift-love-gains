@@ -51,12 +51,19 @@ export default function SettingsView() {
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMsg, setPushMsg] = useState<string | null>(null);
+  const [emailOn, setEmailOn] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const unit = (() => { try { return localStorage.getItem('weightUnit')?.replace(/"/g, '') || 'lbs'; } catch { return 'lbs'; } })();
 
   useEffect(() => { getExistingSubscription().then(s => setPushOn(!!s)).catch(() => {}); }, []);
+  useEffect(() => { getEmailSummaryPref().then(s => setEmailOn(s.enabled)).catch(() => {}); }, []);
   useEffect(() => {
     if (pushOn) updateSchedule({ day: notifDay, hour: notifHour, unit }).catch(() => {});
   }, [notifDay, notifHour, pushOn, unit]);
+  useEffect(() => {
+    if (emailOn) setEmailSummary(true, { day: notifDay, hour: notifHour, unit }).catch(() => {});
+  }, [notifDay, notifHour, unit, emailOn]);
 
   const PUSH_MESSAGES: Record<string, string> = {
     unsupported: 'This browser does not support push notifications. On iPhone, add the app to your Home Screen first.',
