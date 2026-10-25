@@ -93,6 +93,31 @@ export default function SettingsView() {
     setPushBusy(false);
   };
 
+  const toggleEmail = async () => {
+    setEmailBusy(true); setEmailMsg(null);
+    const next = !emailOn;
+    try {
+      await setEmailSummary(next, { day: notifDay, hour: notifHour, unit });
+      setEmailOn(next);
+      setEmailMsg(next
+        ? `Your summary will be emailed to ${user?.email} on your chosen day.`
+        : 'Weekly summary emails are off.');
+    } catch { setEmailMsg('Could not save your email preference. Please try again.'); }
+    setEmailBusy(false);
+  };
+
+  const testEmail = async () => {
+    setEmailBusy(true); setEmailMsg(null);
+    try { await sendTestEmail(); setEmailMsg(`Test summary sent to ${user?.email}.`); }
+    catch (e: any) {
+      const m = String(e?.message ?? e?.context ?? '');
+      setEmailMsg(m.includes('Nothing to send')
+        ? 'Nothing to send yet — log a workout first.'
+        : 'Test failed. Please try again in a moment.');
+    }
+    setEmailBusy(false);
+  };
+
   const requestPermission = async () => {
     if ('Notification' in window && Notification.permission === 'default') {
       await Notification.requestPermission();
