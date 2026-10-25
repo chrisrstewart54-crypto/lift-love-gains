@@ -1,6 +1,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { summaryWindowStart, isSummaryDue } from "./summary-window.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -46,15 +47,6 @@ function localParts(tz: string, d = new Date()) {
   };
 }
 
-function weekStartUtc(tz: string) {
-  const now = new Date();
-  const p = localParts(tz, now);
-  const ms = ((p.day * 24 + p.hour) * 60 + p.minute) * 60000;
-  const start = new Date(now.getTime() - ms);
-  start.setUTCSeconds(0, 0);
-  return start;
-}
-
 function summarizeText(count: number, volume: number, prs: string[], unit: string) {
   let body = `🏋️ ${count} workout${count === 1 ? "" : "s"}\n💪 ${Math.round(volume).toLocaleString()} ${unit} total volume`;
   if (prs.length) body += `\n🏆 New PRs: ${prs.join(", ")}`;
@@ -62,16 +54,20 @@ function summarizeText(count: number, volume: number, prs: string[], unit: strin
 }
 
 async function buildSummary(admin: ReturnType<typeof createClient>, userId: string, tz: string, unit: string) {
-  const start = weekStartUtc(tz);
-  const [{ data: logs }, { data: exercises }] = await Promise.all([
+  const now = new Date();
+  const start = summaryWindowStart(now);
+  const [{ data: logs, error: logsError }, { data: exercises, error: exercisesError }] = await Promise.all([
     admin.from("workout_logs").select("date, exercises").eq("user_id", userId),
     admin.from("exercises").select("id, name, equipment").eq("user_id", userId),
   ]);
+  if (logsError || exercisesError) throw logsError ?? exercisesError;
   const exMap = new Map((exercises ?? []).map((e: any) => [e.id, e]));
   let count = 0; let volume = 0;
   const histMax: Record<string, number> = {}; const weekMax: Record<string, number> = {};
   for (const log of (logs ?? []) as any[]) {
-    const inWeek = new Date(log.date) >= start;
+    const date = new Date(log.date);
+    if (date > now) continue;
+    const inWeek = date >= start;
     if (inWeek) count++;
     for (const ex of log.exercises ?? []) {
       const equip = String(exMap.get(ex.exerciseId)?.equipment ?? "").toLowerCase();
@@ -217,22 +213,25 @@ Deno.serve(async (req) => {
   // Scheduled mode: send to everyone whose local day/hour matches, once per week.
   const { data: subs } = await admin.from("push_subscriptions").select("*");
   let sent = 0;
+  let pushSent = 0; let emailSent = 0; let skippedNoWorkouts = 0; let failed = 0;
   for (const s of (subs ?? []) as Sub[]) {
     const p = localParts(s.timezone);
-    if (p.day !== s.notif_day || p.hour !== s.notif_hour) continue;
+    if (!isSummaryDue(p.day, p.hour, s.notif_day, s.notif_hour)) continue;
     const weekKey = p.date;
     if (s.last_sent_week === weekKey) continue;
-    await admin.from("push_subscriptions").update({ last_sent_week: weekKey }).eq("id", s.id);
     const { count, volume, prs } = await buildSummary(admin, s.user_id, s.timezone, s.weight_unit);
-    if (count === 0) continue;
-    if (await send(admin, s, { title: "Weekly Workout Summary", body: summarizeText(count, volume, prs, s.weight_unit) })) sent++;
+    if (count === 0) { skippedNoWorkouts++; continue; }
+    if (await send(admin, s, { title: "Weekly Workout Summary", body: summarizeText(count, volume, prs, s.weight_unit) })) {
+      await admin.from("push_subscriptions").update({ last_sent_week: weekKey }).eq("id", s.id);
+      sent++; pushSent++;
+    } else failed++;
   }
 
   // Email summaries, same day/hour logic.
   const { data: prefs } = await admin.from("summary_preferences").select("*").eq("email_enabled", true);
   for (const p of (prefs ?? []) as EmailPref[]) {
     const lp = localParts(p.timezone);
-    if (lp.day !== p.notif_day || lp.hour !== p.notif_hour) continue;
+    if (!isSummaryDue(lp.day, lp.hour, p.notif_day, p.notif_hour)) continue;
     const weekKey = lp.date;
     if (p.email_last_sent_week === weekKey) continue;
     const { data: ud } = await admin.auth.admin.getUserById(p.user_id);
@@ -243,12 +242,15 @@ Deno.serve(async (req) => {
       if (r.sent) {
         await admin.from("summary_preferences").update({ email_last_sent_week: weekKey }).eq("id", p.id);
         sent++;
+        emailSent++;
       } else {
-        await admin.from("summary_preferences").update({ email_last_sent_week: weekKey }).eq("id", p.id);
+        skippedNoWorkouts++;
       }
     } catch (e: any) {
+      failed++;
       console.error("weekly email failed", e?.message);
     }
   }
-  return json({ sent });
+  console.log("Weekly summary result", { pushSent, emailSent, skippedNoWorkouts, failed });
+  return json({ sent, pushSent, emailSent, skippedNoWorkouts, failed });
 });
