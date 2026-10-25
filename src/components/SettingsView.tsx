@@ -199,6 +199,42 @@ export default function SettingsView() {
         </div>
       </section>
 
+      {/* Weekly Email Summary */}
+      <section className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <Mail className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-foreground text-sm">Weekly Summary Email</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-foreground block">Email me my summary</span>
+              <span className="text-xs text-muted-foreground">Sent from your connected Gmail to {user?.email}</span>
+            </div>
+            <button
+              disabled={emailBusy}
+              onClick={toggleEmail}
+              className={`w-12 h-7 rounded-full transition-colors relative disabled:opacity-50 ${emailOn ? 'bg-primary' : 'bg-muted'}`}
+            >
+              <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-foreground transition-transform ${emailOn ? 'left-[22px]' : 'left-0.5'}`} />
+            </button>
+          </div>
+          {emailOn && (
+            <button
+              disabled={emailBusy}
+              onClick={testEmail}
+              className="w-full py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium disabled:opacity-50"
+            >
+              Send test email
+            </button>
+          )}
+          {emailMsg && <p className="text-xs text-muted-foreground">{emailMsg}</p>}
+          {emailOn && (
+            <p className="text-xs text-muted-foreground">Uses the same day and time as the notification above.</p>
+          )}
+        </div>
+      </section>
+
       {/* Rest Timer Defaults */}
       <section className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center gap-2">
