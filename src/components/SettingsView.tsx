@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight } from 'lucide-react';
+import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight, Mail } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { enablePush, disablePush, getExistingSubscription, sendTestPush, updateSchedule } from '@/services/pushNotifications';
+import { getEmailSummaryPref, setEmailSummary, sendTestEmail } from '@/services/emailSummary';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
