@@ -110,6 +110,45 @@ export type Database = {
         }
         Relationships: []
       }
+      summary_preferences: {
+        Row: {
+          created_at: string
+          email_enabled: boolean
+          email_last_sent_week: string | null
+          id: string
+          notif_day: number
+          notif_hour: number
+          timezone: string
+          updated_at: string
+          user_id: string
+          weight_unit: string
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean
+          email_last_sent_week?: string | null
+          id?: string
+          notif_day?: number
+          notif_hour?: number
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          weight_unit?: string
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean
+          email_last_sent_week?: string | null
+          id?: string
+          notif_day?: number
+          notif_hour?: number
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          weight_unit?: string
+        }
+        Relationships: []
+      }
       workout_logs: {
         Row: {
           created_at: string

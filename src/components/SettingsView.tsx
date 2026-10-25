@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight } from 'lucide-react';
+import { Settings, Bell, Timer, Volume2, VolumeX, ChevronRight, Mail } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { enablePush, disablePush, getExistingSubscription, sendTestPush, updateSchedule } from '@/services/pushNotifications';
+import { getEmailSummaryPref, setEmailSummary, sendTestEmail } from '@/services/emailSummary';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -50,12 +51,19 @@ export default function SettingsView() {
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMsg, setPushMsg] = useState<string | null>(null);
+  const [emailOn, setEmailOn] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const unit = (() => { try { return localStorage.getItem('weightUnit')?.replace(/"/g, '') || 'lbs'; } catch { return 'lbs'; } })();
 
   useEffect(() => { getExistingSubscription().then(s => setPushOn(!!s)).catch(() => {}); }, []);
+  useEffect(() => { getEmailSummaryPref().then(s => setEmailOn(s.enabled)).catch(() => {}); }, []);
   useEffect(() => {
     if (pushOn) updateSchedule({ day: notifDay, hour: notifHour, unit }).catch(() => {});
   }, [notifDay, notifHour, pushOn, unit]);
+  useEffect(() => {
+    if (emailOn) setEmailSummary(true, { day: notifDay, hour: notifHour, unit }).catch(() => {});
+  }, [notifDay, notifHour, unit, emailOn]);
 
   const PUSH_MESSAGES: Record<string, string> = {
     unsupported: 'This browser does not support push notifications. On iPhone, add the app to your Home Screen first.',
@@ -83,6 +91,31 @@ export default function SettingsView() {
     try { const r = await sendTestPush(); setPushMsg(`Test sent to ${r.sent} device(s).`); }
     catch { setPushMsg('Test failed. Make sure push is enabled on this device.'); }
     setPushBusy(false);
+  };
+
+  const toggleEmail = async () => {
+    setEmailBusy(true); setEmailMsg(null);
+    const next = !emailOn;
+    try {
+      await setEmailSummary(next, { day: notifDay, hour: notifHour, unit });
+      setEmailOn(next);
+      setEmailMsg(next
+        ? `Your summary will be emailed to ${user?.email} on your chosen day.`
+        : 'Weekly summary emails are off.');
+    } catch { setEmailMsg('Could not save your email preference. Please try again.'); }
+    setEmailBusy(false);
+  };
+
+  const testEmail = async () => {
+    setEmailBusy(true); setEmailMsg(null);
+    try { await sendTestEmail(); setEmailMsg(`Test summary sent to ${user?.email}.`); }
+    catch (e: any) {
+      const m = String(e?.message ?? e?.context ?? '');
+      setEmailMsg(m.includes('Nothing to send')
+        ? 'Nothing to send yet — log a workout first.'
+        : 'Test failed. Please try again in a moment.');
+    }
+    setEmailBusy(false);
   };
 
   const requestPermission = async () => {
@@ -162,6 +195,42 @@ export default function SettingsView() {
                 {pushMsg && <p className="text-xs text-muted-foreground">{pushMsg}</p>}
               </div>
             </>
+          )}
+        </div>
+      </section>
+
+      {/* Weekly Email Summary */}
+      <section className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <Mail className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-foreground text-sm">Weekly Summary Email</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-foreground block">Email me my summary</span>
+              <span className="text-xs text-muted-foreground">Sent from your connected Gmail to {user?.email}</span>
+            </div>
+            <button
+              disabled={emailBusy}
+              onClick={toggleEmail}
+              className={`w-12 h-7 rounded-full transition-colors relative disabled:opacity-50 ${emailOn ? 'bg-primary' : 'bg-muted'}`}
+            >
+              <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-foreground transition-transform ${emailOn ? 'left-[22px]' : 'left-0.5'}`} />
+            </button>
+          </div>
+          {emailOn && (
+            <button
+              disabled={emailBusy}
+              onClick={testEmail}
+              className="w-full py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium disabled:opacity-50"
+            >
+              Send test email
+            </button>
+          )}
+          {emailMsg && <p className="text-xs text-muted-foreground">{emailMsg}</p>}
+          {emailOn && (
+            <p className="text-xs text-muted-foreground">Uses the same day and time as the notification above.</p>
           )}
         </div>
       </section>

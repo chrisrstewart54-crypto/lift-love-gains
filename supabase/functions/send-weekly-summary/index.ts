@@ -6,6 +6,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+const GMAIL_GATEWAY = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
+
 webpush.setVapidDetails(
   "mailto:notifications@lift-love-gains.lovable.app",
   Deno.env.get("VAPID_PUBLIC_KEY")!,
@@ -18,6 +20,11 @@ const json = (body: unknown, status = 200) =>
 type Sub = {
   id: string; user_id: string; endpoint: string; p256dh: string; auth: string;
   notif_day: number; notif_hour: number; timezone: string; weight_unit: string; last_sent_week: string | null;
+};
+
+type EmailPref = {
+  id: string; user_id: string; notif_day: number; notif_hour: number;
+  timezone: string; weight_unit: string; email_last_sent_week: string | null;
 };
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -48,6 +55,12 @@ function weekStartUtc(tz: string) {
   return start;
 }
 
+function summarizeText(count: number, volume: number, prs: string[], unit: string) {
+  let body = `🏋️ ${count} workout${count === 1 ? "" : "s"}\n💪 ${Math.round(volume).toLocaleString()} ${unit} total volume`;
+  if (prs.length) body += `\n🏆 New PRs: ${prs.join(", ")}`;
+  return body;
+}
+
 async function buildSummary(admin: ReturnType<typeof createClient>, userId: string, tz: string, unit: string) {
   const start = weekStartUtc(tz);
   const [{ data: logs }, { data: exercises }] = await Promise.all([
@@ -74,10 +87,8 @@ async function buildSummary(admin: ReturnType<typeof createClient>, userId: stri
   }
   const prs = Object.entries(weekMax)
     .filter(([id, w]) => w > 0 && (!histMax[id] || w > histMax[id]))
-    .map(([id]) => exMap.get(id)?.name).filter(Boolean);
-  let body = `🏋️ ${count} workout${count === 1 ? "" : "s"}\n💪 ${Math.round(volume).toLocaleString()} ${unit} total volume`;
-  if (prs.length) body += `\n🏆 New PRs: ${prs.join(", ")}`;
-  return { count, body };
+    .map(([id]) => exMap.get(id)?.name).filter(Boolean) as string[];
+  return { count, volume, prs };
 }
 
 async function send(admin: ReturnType<typeof createClient>, sub: Sub, payload: object) {
@@ -96,25 +107,109 @@ async function send(admin: ReturnType<typeof createClient>, sub: Sub, payload: o
   }
 }
 
+function encodeB64Url(bytes: Uint8Array) {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function sendGmailEmail(to: string, subject: string, html: string) {
+  const email = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    "MIME-Version: 1.0",
+    'Content-Type: text/html; charset="UTF-8"',
+    "",
+    html,
+  ].join("\r\n");
+  const res = await fetch(`${GMAIL_GATEWAY}/users/me/messages/send`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")!}`,
+      "X-Connection-Api-Key": Deno.env.get("GOOGLE_MAIL_API_KEY") ?? "",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ raw: encodeB64Url(new TextEncoder().encode(email)) }),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error(`gmail send failed [${res.status}]: ${errBody}`);
+    throw new Error(`gmail ${res.status}: ${errBody}`);
+  }
+  return true;
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function buildSummaryHtml(count: number, volume: number, prs: string[], unit: string, test = false) {
+  const prItems = prs.length
+    ? `<ul style="margin:8px 0 0;padding-left:20px;">${prs.map((p) => `<li style="margin:2px 0;">${escapeHtml(p)}</li>`).join("")}</ul>`
+    : "<p style=\"margin:8px 0 0;color:#6b7280;\">No new personal bests this week.</p>";
+  return `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111827;">
+  <h1 style="font-size:20px;margin:0 0 4px;">${test ? "Weekly Workout Summary (test)" : "Weekly Workout Summary"}</h1>
+  <p style="margin:0 0 16px;color:#6b7280;font-size:13px;">Your lifting week at a glance</p>
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+    <p style="margin:0 0 8px;font-size:16px;">🏋️ <strong>${count}</strong> workout${count === 1 ? "" : "s"}</p>
+    <p style="margin:0 0 8px;font-size:16px;">💪 <strong>${Math.round(volume).toLocaleString()}</strong> ${escapeHtml(unit)} total volume</p>
+    <p style="margin:0;font-size:14px;font-weight:600;">🏆 New personal bests</p>
+    ${prItems}
+  </div>
+  <p style="margin:16px 0 0;color:#9ca3af;font-size:12px;">Sent by Lift Love Gains.</p>
+</div>`;
+}
+
+async function deliverEmailSummary(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  to: string,
+  tz: string,
+  unit: string,
+  test = false,
+) {
+  const { count, volume, prs } = await buildSummary(admin, userId, tz, unit);
+  if (count === 0 && !test) return { sent: false, reason: "no-workouts" };
+  const html = buildSummaryHtml(count, volume, prs, unit, test);
+  const subject = test ? "Weekly Workout Summary (test)" : "Weekly Workout Summary";
+  await sendGmailEmail(to, subject, html);
+  return { sent: true, count };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   let body: any = {};
   try { body = await req.json(); } catch { /* cron may send empty */ }
 
-  // Test mode: authenticated user sends a summary to their own devices now.
-  if (body?.test === true) {
+  // Test modes: authenticated user sends a summary to their own devices / inbox now.
+  if (body?.test === true || body?.testEmail === true) {
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
     const { data, error } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
     if (error || !data?.claims?.sub) return json({ error: "Not signed in" }, 401);
     const userId = data.claims.sub as string;
+
+    if (body?.testEmail === true) {
+      const to = (data.claims as any).email as string | undefined;
+      if (!to) return json({ error: "No email on this account" }, 400);
+      const tz = typeof body.timezone === "string" && body.timezone ? body.timezone : "UTC";
+      const unit = typeof body.unit === "string" && body.unit ? body.unit : "lbs";
+      try {
+        const r = await deliverEmailSummary(admin, userId, to, tz, unit, true);
+        if (!r.sent) return json({ error: "Email send failed" }, 502);
+        return json({ sent: 1 });
+      } catch (e: any) {
+        return json({ error: e?.message ?? "Email send failed" }, 502);
+      }
+    }
+
     const { data: subs } = await admin.from("push_subscriptions").select("*").eq("user_id", userId);
     if (!subs?.length) return json({ error: "No devices registered for push" }, 404);
     let sent = 0;
     for (const s of subs as Sub[]) {
-      const { body: text } = await buildSummary(admin, userId, s.timezone, s.weight_unit);
-      if (await send(admin, s, { title: "Weekly Workout Summary (test)", body: text })) sent++;
+      const { count, volume, prs } = await buildSummary(admin, userId, s.timezone, s.weight_unit);
+      if (await send(admin, s, { title: "Weekly Workout Summary (test)", body: summarizeText(count, volume, prs, s.weight_unit) })) sent++;
     }
     return json({ sent });
   }
@@ -127,10 +222,33 @@ Deno.serve(async (req) => {
     if (p.day !== s.notif_day || p.hour !== s.notif_hour) continue;
     const weekKey = p.date;
     if (s.last_sent_week === weekKey) continue;
-    const { count, body: text } = await buildSummary(admin, s.user_id, s.timezone, s.weight_unit);
     await admin.from("push_subscriptions").update({ last_sent_week: weekKey }).eq("id", s.id);
+    const { count, volume, prs } = await buildSummary(admin, s.user_id, s.timezone, s.weight_unit);
     if (count === 0) continue;
-    if (await send(admin, s, { title: "Weekly Workout Summary", body: text })) sent++;
+    if (await send(admin, s, { title: "Weekly Workout Summary", body: summarizeText(count, volume, prs, s.weight_unit) })) sent++;
+  }
+
+  // Email summaries, same day/hour logic.
+  const { data: prefs } = await admin.from("summary_preferences").select("*").eq("email_enabled", true);
+  for (const p of (prefs ?? []) as EmailPref[]) {
+    const lp = localParts(p.timezone);
+    if (lp.day !== p.notif_day || lp.hour !== p.notif_hour) continue;
+    const weekKey = lp.date;
+    if (p.email_last_sent_week === weekKey) continue;
+    const { data: ud } = await admin.auth.admin.getUserById(p.user_id);
+    const to = ud?.user?.email;
+    if (!to) continue;
+    try {
+      const r = await deliverEmailSummary(admin, p.user_id, to, p.timezone, p.weight_unit);
+      if (r.sent) {
+        await admin.from("summary_preferences").update({ email_last_sent_week: weekKey }).eq("id", p.id);
+        sent++;
+      } else {
+        await admin.from("summary_preferences").update({ email_last_sent_week: weekKey }).eq("id", p.id);
+      }
+    } catch (e: any) {
+      console.error("weekly email failed", e?.message);
+    }
   }
   return json({ sent });
 });
